@@ -1,0 +1,241 @@
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300&display=swap');
+
+body{
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    
+
+}
+
+ul{
+    list-style: none;
+}
+
+.logo{
+
+    width: 7vw;
+    padding: 10px;
+
+}
+
+.nav_bar{
+
+    width: 100%;
+}
+
+a{
+    text-decoration: none;
+    display: inline-block;
+    color: black;
+
+}
+
+    
+ul a::after { 
+    content: '';
+    display: block;
+    width: 0;
+    height: 2px;
+    background: #A7727D;
+    transition: width .3s;
+ }
+
+ ul a:hover::after{
+    width: 100%;
+    transition: width .3s;
+ }
+
+
+.header_nav{
+    background: linear-gradient(to right, #edeef1 50%, white 50%);;
+    
+    
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+
+.header_nav .menu_hamburger{
+    display: none;
+    width: 60px;
+    position: absolute;
+    right: 10px;
+    z-index: 2  ;
+}
+
+
+.nav_links{
+    display: flex;
+    justify-content: center;
+    gap: 5%;
+    font-size: 1.2em;
+
+}
+
+@media screen and (max-width:1100px){
+
+    .nav_links{
+        gap: 3%;
+        font-size: 1em;
+    }
+
+    .logo{
+
+        width: 12vw;
+    }
+   
+
+    .text_accueil p{
+        font-size: 1em;
+    }
+    
+}
+
+
+@media screen and (max-width : 620px) {
+    
+    .header_nav .menu_hamburger{
+        display: block;
+        width: 50px;
+    }
+
+    .logo{
+        width: 25vw;
+    }
+
+    .nav_links{
+        display: none;
+        background-color: rgba(46, 79, 79, 0.521);
+        backdrop-filter: blur(8px);
+        width: 100%;
+        height: 100vh;
+        position: absolute;
+        flex-direction: column;
+        padding: 0  ;
+        left: 0px;
+        top: 0;
+        text-align: center;
+        font-size: 2em;
+    }
+    
+}
+
+
+
+.nav_links.mobile-menu {
+    display: flex;
+    margin: 0;
+    z-index: 2;
+    
+}
+
+.accueil{
+    background-image:url(../img/image_accueil.jpg);
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    
+    text-align: center;
+    
+    height: 400px;
+    width: 50vw;
+    position: relative;
+
+    
+}
+
+.text_acceuil{
+    position: absolute;
+    left: 50%;
+    width: 50vw;
+}
+
+
+
+h1{
+    padding-top: 50px;
+    margin: 0;
+    font-family: 'Great Vibes', cursive;
+    font-size: 6em;
+    font-weight: 100;
+}
+
+
+
+.text_acceuil p:nth-child(2){
+    margin-top: 0;
+    letter-spacing: 2px;
+    font-size: 1.3em;
+    font-weight: 600;
+    margin-bottom: 10px;
+    transform: translateY(-20px);
+
+}
+
+.text_acceuil p:nth-child(3) {
+    font-size: 1.2em;
+    font-weight: 500;
+    margin-bottom: 10px;
+    
+}
+
+.bolder{
+    font-size: 1.1em;
+    color: #4e4043;
+}
+
+.welcome h2{
+
+    font-size: 5em;
+    font-weight: 100;
+    font-family: 'Great Vibes', cursive;
+    margin-bottom: 0;
+    
+}
+
+.contain_reflex{
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 75px;
+}
+
+.reflexquoi{
+    width: 50%;
+    margin-right: 20%;
+}
+
+.reflexquoi p:nth-child(2){
+    font-size: 1.1em;
+}
+
+.welcome{
+    width: 40%; 
+}
+.welcome p{
+    
+    margin-top: 0;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    font-weight: 600;
+    transform: translateY(0px);
+}
+
+.title{
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.5em;
+   
+}
+
+.contain_reflex{
+    background-image:url(../img/blue.PNG);
+    background-size: 50vw auto;
+    background-position-x: calc(100vw - 50vw);
+    background-position-y: top;
+    background-repeat: no-repeat;
+    
+    text-align: center;
+    
+    height: 450px;
+}
