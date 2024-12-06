@@ -4,6 +4,10 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const db = require('./modules/database.js');
 const usersRoutes = require('./routes/users.js');
+const caresRoutes = require('./routes/cares.js');
+const appointmentsRoutes = require('./routes/appointments.js');
+const eventsRoutes = require('./routes/events.js');
+const guestbookRoutes = require('./routes/guestbook.js');
 const helmet = require('helmet');
 const cors = require('cors');
 const swaggerJsDoc = require('swagger-jsdoc');
@@ -45,6 +49,10 @@ app.use(
     })
    );   
 app.use('/api/users', usersRoutes);
+app.use('/api/cares', caresRoutes);
+app.use('/api/appointments', appointmentsRoutes);
+app.use('/api/events', eventsRoutes);
+app.use('/api/guestbook', guestbookRoutes);
 
 db.connect((err) => {
     if (err) {console.log(err);}
