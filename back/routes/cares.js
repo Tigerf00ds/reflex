@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');
 const db = require('../modules/database.js');
-const jwt = require('jsonwebtoken');
 const authorizationJWT = require('../modules/auth.js');
 const he = require('he');
 const eh = require('escape-html');
@@ -29,6 +27,23 @@ const upload = multer({ storage, fileFilter });
 
 const wordRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']{1,255}$/;
 const descriptionRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\-']{1,255}$/;
+const formatSlug = (text) =>{
+    text = text.toString();
+    text = text.replace(/[àáâäãÀÁÂÄÃ]/g,'a');
+    text = text.replace(/[ìíîïÌÍÎÏ]/g,'i');
+    text = text.replace(/[ùúûüÙÚÛÜ]/g,'u');
+    text = text.replace(/[èéêëÈÉÊË]/g,'e');
+    text = text.replace(/[òóôöõÒÓÔÖÕ]/g,'o');
+    text = text.replace(/[ýÿÝŸ]/g,'y');
+    text = text.replace(/[æÆ]/g,'ae');
+    text = text.replace(/[œŒ]/g,'oe');
+    text = text.replace(/[ñÑ]/g,'n');
+    text = text.replace(/[çÇ]/g,'c');
+    text = text.replace(/[ß]/g,'ss');
+    text = text.replace(/[\s']/g,'-');
+    text = text.toLowerCase();
+    return text;
+}
 
 const caresSchema = {
     type: "object",
@@ -36,10 +51,14 @@ const caresSchema = {
       name: {type: "string"},
       short_description: {type: "string"},
       description: {type: "string"},
+      min_duration: {type: "integer"},
+      max_duration: {type: "integer"},
       price: {type: "integer"},
       tax: {type: "integer"},
-      is_salon: {type: "boolean"},
+      travel_expenses: {type: "integer"},
+      is_whole_day: {type: "boolean"},
       is_home: {type: "boolean"},
+      is_salon: {type: "boolean"},
       is_company: {type: "boolean"},
       is_structure: {type: "boolean"},
       filesdescriptions: {
@@ -47,7 +66,7 @@ const caresSchema = {
         items: { type: "string" }
       }
     },
-    required: ["name", "short_description","description" , "price", "tax", "is_salon", "is_home", "is_company", "is_structure", "filesdescriptions"],
+    required: ["name", "short_description", "description", "min_duration", "max_duration", "price", "tax", "travel_expenses", "is_whole_day", "is_home", "is_salon", "is_company", "is_structure", "filesdescriptions"],
     additionalProperties: false
 }
 const caresValidate = ajv.compile(caresSchema);
@@ -81,7 +100,7 @@ router.post('/create', upload.array('images', 12), async (req, res) => {
         console.log(caresValidate.errors);
         return res.status(400).json({ error: 'Erreur type', details: caresValidate.errors });
     }
-    const { name, short_description, description, price, tax, is_salon, is_home, is_company, is_structure, filesdescriptions } = req.body;
+    const { name, short_description, description, min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, filesdescriptions } = req.body;
     if(!name || !name.match(wordRegex)){
         console.error('Nom invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Nom invalide.' });
@@ -94,6 +113,14 @@ router.post('/create', upload.array('images', 12), async (req, res) => {
         console.error('Description invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Description invalide.' });
     }
+    if(!min_duration || isNaN(min_duration)){
+        console.error('Durée minimale invalide.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Durée minimale invalide.' });
+    }
+    if(!max_duration || isNaN(max_duration)){
+        console.error('Durée maximale invalide.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Durée maximale invalide.' });
+    }
     if(!price || isNaN(price)){
         console.error('Prix invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Prix invalide.' });
@@ -102,19 +129,37 @@ router.post('/create', upload.array('images', 12), async (req, res) => {
         console.error('TVA invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'TVA invalide.' });
     }
+    if(!travel_expenses || isNaN(travel_expenses)){
+        console.error('Frais de déplacement invalides.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Frais de déplacement invalides.' });
+    }
     if(!filesdescriptions){
         console.error('Description des images invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Description des images invalide.' });
     }
+    const slug = formatSlug(name);
     const filespaths = req.files ? req.files.map(file => file.path) : [];
     const filesnames = req.files ? req.files.map(file => file.filename) : [];
-    const sql = 'INSERT INTO cares (name, short_description, description, price, tax, is_salon, is_home, is_company, is_structure, filesnames, filespaths, filesdescriptions) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)';
-    db.query(sql, [eh(name), eh(short_description), he.encode(description), price, tax, is_salon, is_home, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions)], (err, results) => {
-        if (err) {
-            console.error('Erreur SQL :', err);
+    const sql1 = 'SELECT * FROM cares WHERE slug = ?';
+    db.query(sql1, [slug], (err, results) => {
+        if(err){
             return res.status(500).json({ error: 'Erreur serveur', details: err });
         }
-        return res.status(200).send({ message: 'Soin créé avec succès', name: name });
+        const sameSlug = results.some(result => 
+            result.slug === slug
+        );
+        if(sameSlug) {
+        console.error('Nom déjà pris.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Nom déjà pris.' });
+        }
+        const sql2 = 'INSERT INTO cares (name, slug, short_description, description, min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, filesnames, filespaths, filesdescriptions) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        db.query(sql2, [eh(name), slug, eh(short_description), he.encode(description), min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions)], (err, results) => {
+            if (err) {
+                console.error('Erreur SQL :', err);
+                return res.status(500).json({ error: 'Erreur serveur', details: err });
+            }
+            return res.status(200).send({ message: 'Soin créé avec succès', name: name });
+        });
     });
 });
 
@@ -126,7 +171,7 @@ router.put('/update/:id', upload.array('images', 12), async (req, res) => {
         console.log(caresValidate.errors);
         return res.status(400).json({ error: 'Erreur type', details: caresValidate.errors });
     }
-    const { name, short_description, description, price, tax, is_salon, is_home, is_company, is_structure, filesdescriptions } = req.body;
+    const { name, short_description, description, min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, filesdescriptions } = req.body;
     const { id } = req.params;
     if(!name || !name.match(wordRegex)){
         console.error('Nom invalide.');
@@ -140,6 +185,14 @@ router.put('/update/:id', upload.array('images', 12), async (req, res) => {
         console.error('Description invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Description invalide.' });
     }
+    if(!min_duration || isNaN(min_duration)){
+        console.error('Durée minimale invalide.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Durée minimale invalide.' });
+    }
+    if(!max_duration || isNaN(max_duration)){
+        console.error('Durée maximale invalide.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Durée maximale invalide.' });
+    }
     if(!price || isNaN(price)){
         console.error('Prix invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Prix invalide.' });
@@ -148,19 +201,37 @@ router.put('/update/:id', upload.array('images', 12), async (req, res) => {
         console.error('TVA invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'TVA invalide.' });
     }
+    if(!travel_expenses || isNaN(travel_expenses)){
+        console.error('Frais de déplacement invalides.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Frais de déplacement invalides.' });
+    }
     if(!filesdescriptions){
         console.error('Description des images invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Description des images invalide.' });
     }
+    const slug = formatSlug(name);
     const filespaths = req.files ? req.files.map(file => file.path) : [];
     const filesnames = req.files ? req.files.map(file => file.filename) : [];
-    const sql = 'UPDATE cares SET name = ?, short_description = ?, description = ?, price = ?, tax = ?, is_salon = ?, is_home = ?, is_company = ?, is_structure = ?, filesnames = ?, filespaths = ?, filesdescriptions = ? WHERE id = ?';
-    db.query(sql, [eh(name), eh(short_description), he.encode(description), price, tax, is_salon, is_home, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions), id], (err, results) => {
-        if (err) {
-            console.error('Erreur SQL :', err);
+    const sql1 = 'SELECT * FROM cares WHERE slug = ? AND id != ?';
+    db.query(sql1, [slug, id], (err, results) => {
+        if(err){
             return res.status(500).json({ error: 'Erreur serveur', details: err });
         }
-        return res.status(200).send({ message: 'Soin modifié avec succès', name: name });
+        const sameSlug = results.some(result => 
+            result.slug === slug
+        );
+        if(sameSlug) {
+        console.error('Nom déjà pris.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Nom déjà pris.' });
+        }
+        const sql2 = 'UPDATE cares SET name = ?, slug = ?, short_description = ?, description = ?, min_duration = ?, max_duration = ?, price = ?, tax = ?, travel_expenses = ?, is_whole_day = ?, is_home = ?, is_salon = ?, is_company = ?, is_structure = ?, filesnames = ?, filespaths = ?, filesdescriptions = ? WHERE id = ?';
+        db.query(sql2, [eh(name), slug, eh(short_description), he.encode(description), min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions), id], (err, results) => {
+            if (err) {
+                console.error('Erreur SQL :', err);
+                return res.status(500).json({ error: 'Erreur serveur', details: err });
+            }
+            return res.status(200).send({ message: 'Soin modifié avec succès', name: name });
+        });
     });
 });
 
