@@ -84,10 +84,18 @@ router.post('/create', async (req, res) => {
         console.error('Durée invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Durée invalide.' });
     }
-    //TODO: tester le calcul du temps, ajouter le calcul du prix, comprendre travel_expenses
     const time_end = addMinutes(time_start, duration);
     const time_depart = address==="salon"||time_start===0?time_start:addMinutes(time_start-100,30);
     const time_return = address==="salon"||time_start===0?time_end:addMinutes(time_end,30);
+    let price = 0;
+    const sql1 = 'SELECT * FROM cares WHERE id = ?';
+    db.query(sql1, [care_id], (err, results) => {
+        if(err){
+            return res.status(500).json({ error: 'Erreur serveur', details: err });
+        }
+        if(results.length>0)price += results[0].price / 60 * duration;
+        if(results.length>0 && address!=='salon')price += results[0].travel_expenses;
+    });
     const dateArray = date_booked.split('-');
     if(yearToday > parseInt(dateArray[0])){
         console.error('Année invalide.');
@@ -122,7 +130,7 @@ router.post('/create', async (req, res) => {
         return res.status(400).json({ error: 'Erreur requête', details: 'Créneau déjà pris.' });
         }
         const sql3 = 'INSERT INTO appointments (care_id, address, name, email, telephone, date_booked, time_depart, time_start, time_end, time_return, price) VALUES (?,?,?,?,?,?,?,?,?,?,?)';
-        db.query(sql3, [care_id, he.encode(address), he.encode(name), he.encode(email), he.encode(telephone), he.encode(date_booked), time_depart, time_start, time_end, time_return], price, (err, results) => {
+        db.query(sql3, [care_id, he.encode(address), he.encode(name), he.encode(email), he.encode(telephone), he.encode(date_booked), time_depart, time_start, time_end, time_return, price], (err, results) => {
             if (err) {
                 console.error('Erreur SQL :', err);
                 return res.status(500).json({ error: 'Erreur serveur', details: err });
@@ -143,7 +151,7 @@ router.put('/update/:id',  async (req, res) => {
         console.log(appointmentsValidate.errors);
         return res.status(400).json({ error: 'Erreur type', details: appointmentsValidate.errors });
     }
-    const { care_id, address, name, email, telephone, date_booked, time_depart, time_start, time_end, time_return } = req.body;
+    const { care_id, address, name, email, telephone, date_booked, time_start, duration } = req.body;
     const { id } = req.params;
     const dateToday = new Date();
     const yearToday = dateToday.getFullYear();
@@ -174,61 +182,52 @@ router.put('/update/:id',  async (req, res) => {
         console.error('Date invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide.' });
     }
-    if(isNaN(time_depart)){
-        console.error('Temps de départure invalide.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Temps de départure invalide.' });
-    }
     if(isNaN(time_start)){
         console.error('Temps de début invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Temps de début invalide.' });
     }
-    if(isNaN(time_end)){
-        console.error('Temps de fin invalide.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Temps de fin invalide.' });
+    if(!duration || isNaN(duration)){
+        console.error('Durée invalide.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Durée invalide.' });
     }
-    if(isNaN(time_return)){
-        console.error('Temps de retour invalide.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Temps de retour invalide.' });
-    }
-    if(time_start >= time_end){
-        console.error('Temps invalide.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Temps invalide.' });
-    }
-    if(time_depart > time_start){
-        console.error('Temps invalide.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Temps invalide.' });
-    }
-    if(time_end > time_return){
-        console.error('Temps invalide.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Temps invalide.' });
-    }
-    const dateArray = date_booked.split('-');
-    if(yearToday > parseInt(dateArray[0])){
-        console.error('Date invalide.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide.' });
-    }
-    if(yearToday === parseInt(dateArray[0]) && monthToday > parseInt(dateArray[1])){
-        console.error('Date invalide.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide.' });
-    }
-    if(yearToday === parseInt(dateArray[0]) && monthToday === parseInt(dateArray[1]) && dayToday >= parseInt(dateArray[2])){
-        console.error('Date invalide.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide.' });
-    }
-    if(time_start === 0 && time_end === 2400 && yearToday === parseInt(dateArray[0]) && monthToday === parseInt(dateArray[1])){
-        console.error('Date invalide.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide.' });
-    }
-    if(time_start === 0 && time_end === 2400 && yearToday === parseInt(dateArray[0]) && nextMonth === parseInt(dateArray[1]) && dayToday > parseInt(dateArray[2])){
-        console.error('Date invalide.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide.' });
-    }
-    const sql1 = 'SELECT * FROM appointments WHERE date_booked = ? AND id != ?';
-    db.query(sql1, [he.encode(date_booked), id], (err, results) => {
+    const time_end = addMinutes(time_start, duration);
+    const time_depart = address==="salon"||time_start===0?time_start:addMinutes(time_start-100,30);
+    const time_return = address==="salon"||time_start===0?time_end:addMinutes(time_end,30);
+    let price = 0;
+    const sql1 = 'SELECT * FROM cares WHERE id = ?';
+    db.query(sql1, [care_id], (err, results) => {
         if(err){
             return res.status(500).json({ error: 'Erreur serveur', details: err });
         }
-        console.log(results);
+        if(results.length>0)price += results[0].price / 60 * duration;
+        if(results.length>0 && address!=='salon')price += results[0].travel_expenses;
+    });
+    const dateArray = date_booked.split('-');
+    if(yearToday > parseInt(dateArray[0])){
+        console.error('Année invalide.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Année invalide.' });
+    }
+    if(yearToday === parseInt(dateArray[0]) && monthToday > parseInt(dateArray[1])){
+        console.error('Mois invalide.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Mois invalide.' });
+    }
+    if(yearToday === parseInt(dateArray[0]) && monthToday === parseInt(dateArray[1]) && dayToday >= parseInt(dateArray[2])){
+        console.error('Jour invalide.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Jour invalide.' });
+    }
+    if(time_start === 0 && time_end === 2400 && yearToday === parseInt(dateArray[0]) && monthToday === parseInt(dateArray[1])){
+        console.error('Date invalide pour un jour complet.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide pour un jour complet.' });
+    }
+    if(time_start === 0 && time_end === 2400 && yearToday === parseInt(dateArray[0]) && nextMonth === parseInt(dateArray[1]) && dayToday > parseInt(dateArray[2])){
+        console.error('Date invalide pour un jour complet.');
+        return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide pour un jour complet.' });
+    }
+    const sql2 = 'SELECT * FROM appointments WHERE date_booked = ? AND id != ?';
+    db.query(sql2, [he.encode(date_booked), id], (err, results) => {
+        if(err){
+            return res.status(500).json({ error: 'Erreur serveur', details: err });
+        }
         const overlapping = results.some(result => 
             result.time_return > time_depart && result.time_depart < time_return
         );
@@ -236,8 +235,8 @@ router.put('/update/:id',  async (req, res) => {
         console.error('Créneau déjà pris.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Créneau déjà pris.' });
         }
-        const sql2 = 'UPDATE appointments SET care_id = ?, address = ?, name = ?, email = ?, telephone = ?, date_booked = ?, time_depart = ?, time_start = ?, time_end = ?, time_return = ? WHERE id = ?';
-        db.query(sql2, [care_id, he.encode(address), he.encode(name), he.encode(email), he.encode(telephone), he.encode(date_booked), time_depart, time_start, time_end, time_return, id], (err, results) => {
+        const sql3 = 'UPDATE appointments SET care_id = ?, address = ?, name = ?, email = ?, telephone = ?, date_booked = ?, time_depart = ?, time_start = ?, time_end = ?, time_return = ?, price = ? WHERE id = ?';
+        db.query(sql3, [care_id, he.encode(address), he.encode(name), he.encode(email), he.encode(telephone), he.encode(date_booked), time_depart, time_start, time_end, time_return, price, id], (err, results) => {
             if (err) {
                 console.error('Erreur SQL :', err);
                 return res.status(500).json({ error: 'Erreur serveur', details: err });
