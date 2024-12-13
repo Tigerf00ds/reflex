@@ -67,7 +67,7 @@ router.post('/create', async (req, res) => {
         console.error('Aucun numéro dans le mot de passe.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Aucun numéro dans le mot de passe.' });
     }
-    if(!password || !password.match(/[!@#$%^&*(),;.?":{}|<>]/)){
+    if(!password || !password.match(/[!@#$%^&*(),;.?:{}|<>]/)){
         console.error('Aucun caractère spécial dans le mot de passe.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Aucun caractère spécial dans le mot de passe.' });
     }

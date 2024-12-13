@@ -2,7 +2,7 @@
     <div class="wrapper">
         <h2>Back-office</h2>
         <div class="card">
-            <h3  @click="toggleUsers">Users</h3>
+            <h3  @click="toggleUsers">Comptes administrateurs</h3>
             <div ref="usersContent" 
                 class="menu-content" 
                 :style="{ maxHeight: usersOpen ? usersHeight : '0px' }">
@@ -11,9 +11,53 @@
                     <p v-if="!isLoading && users.length<1">Aucun utilisateur</p>
                 </div>
                 <div class="card-content" v-if="!isLoading && users.length">
-                    <div class="card-entries" v-for="user in users" :key="user.id">
-                        <p>{{ user.email }}</p>
-                        <div class="actions"><span @click="console.log(user.id)" class="edit"></span><span @click="console.log(user.id)" class="delete">X</span></div>
+                    <div class="entry-wrapper" v-for="(user, index) in users" :key="user.id">
+                        <div :class="{invisible: index===editingUser}" class="card-entries">
+                            <div>
+                                <p>{{ user.email }}</p>
+                            </div>
+                            <div class="actions"><span @click="userEdit(index, user)" class="edit">E</span><span v-if="!user.id===1" @click="console.log(user.id)" class="delete">X</span></div>
+                        </div>
+                        <form :class="{invisible: index!==editingUser}" class="card-entries">
+                            <div>
+                                <div>
+                                    <p>
+                                        <label :for="'User-email'+user.id">
+                                            E-mail : 
+                                            <input v-model="editedUser.email" type="email" :name="'User-email'+user.id" :id="'User-email'+user.id">
+                                            <span style="color: #aa3333" v-if="!editedUser.email">Requis</span>
+                                            <span style="color: #aa3333" v-if="editedUser.email && !editedUser.email.match(emailRegex)">Invalide</span>
+                                        </label>
+                                    </p>
+                                </div>
+                                <div>
+                                    <p>Le mot de passe doit contenir :</p>
+                                    <p><span style="color: #aa3333" v-if="!editedUser.password.match(/.{10,255}/)">X</span><span style="color: #33aa33" v-else>O</span> 10 caractères</p>
+                                    <p><span style="color: #aa3333" v-if="!editedUser.password.match(/[a-z]/)">X</span><span style="color: #33aa33" v-else>O</span> 1 minuscule</p>
+                                    <p><span style="color: #aa3333" v-if="!editedUser.password.match(/[A-Z]/)">X</span><span style="color: #33aa33" v-else>O</span> 1 majuscule</p>
+                                    <p><span style="color: #aa3333" v-if="!editedUser.password.match(/[0-9]/)">X</span><span style="color: #33aa33" v-else>O</span> 1 chiffre</p>
+                                    <p><span style="color: #aa3333" v-if="!editedUser.password.match(/[!@#$%^&*(),;.?:{}|<>]/)">X</span><span style="color: #33aa33" v-else>O</span> 1 caractère spécial parmis !@#$%^&*(),;.?":{}|<></p>
+                                </div>
+                                <div>
+                                    <p>
+                                        <label :for="'password'+user.id">
+                                            Mot de passe : 
+                                            <input v-model="editedUser.password" type="password" :name="'password'+user.id" :id="'password'+user.id">
+                                            <span style="color: #aa3333" v-if="!editedUser.password">Requis</span>
+                                        </label>
+                                    </p>
+                                    <p>
+                                        <label :for="'password_confirm'+user.id">
+                                            Confirmation : 
+                                            <input v-model="editedUser.password_confirm" type="password" :name="'password_confirm'+user.id" :id="'password_confirm'+user.id">
+                                            <span style="color: #aa3333" v-if="!editedUser.password_confirm">Requis</span>
+                                            <span style="color: #aa3333" v-if="editedUser.password_confirm && editedUser.password_confirm !== editedUser.password">Doit être identique au mot de passe.</span>
+                                        </label>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="actions"><span @click="updateUser" class="edit">O</span><span @click="editingUser=null" class="delete">X</span></div>
+                        </form>
                     </div>
                     <div class="card-entries" @click="console.log('add')">
                         <p>+</p>
@@ -34,76 +78,199 @@
                     <div class="entry-wrapper" v-for="(appointment, index) in appointments" :key="appointment.id">
                         <div :class="{invisible: index===editingAppointment}"  class="card-entries">
                             <div>
-                                <p>Patient/e : {{ decode(appointment.name) }}</p>
-                                <p>Mail : <a :href="'mailto:'+appointment.email">{{ decode(appointment.email) }}</a></p>
-                                <p>Téléphone : <a :href="'tel:'+appointment.telephone">{{ decode(appointment.telephone)}}</a></p>
-                                <p>Soin : {{ decode(cares.find(care => care.id === appointment.care_id)?.name || 'Horaire bloqué')  }}</p>
-                                <p>Lieu : {{ decode(appointment.address) }}</p>
-                                <p>Date : {{ appointment.date_booked.slice(0,10) }}</p>
-                                <p>Début : {{ hourisation(appointment.time_start) }} Fin : {{ hourisation(appointment.time_end) }} ({{ durationBetween(appointment.time_start, appointment.time_end) }} minutes)</p>
-                                <p v-if="appointment.time_depart!==appointment.time_start || appointment.time_return!==appointment.time_end">Départ : {{ hourisation(appointment.time_depart) }} Retour : {{ hourisation(appointment.time_return) }}</p>
-                                <p>Tarif : {{ monisator(appointment.price) }}</p>
+                                <div>
+                                    <div>
+                                        <p>Date : {{ appointment.date_booked.slice(0,10) }}</p>
+                                        <br>
+                                    </div>
+                                    <div>
+                                        <p>{{ hourisation(appointment.time_start) }} - {{ hourisation(appointment.time_end) }}</p>
+                                        <p v-if="appointment.time_depart!==appointment.time_start || appointment.time_return!==appointment.time_end">Départ : {{ hourisation(appointment.time_depart) }} Retour : {{ hourisation(appointment.time_return) }}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p>Patient/e : {{ decode(appointment.name) }}</p>
+                                    <p>E-mail : <a :href="'mailto:'+decode(appointment.email)">{{ decode(appointment.email) }}</a></p>
+                                    <p>Téléphone : <a :href="'tel:'+decode(appointment.telephone)">{{ decode(appointment.telephone)}}</a></p>
+                                </div>
+                                <div>
+                                    <p>Soin : {{ decode(cares.find(care => care.id === appointment.care_id)?.name || 'Horaire bloqué')  }}</p>
+                                    <p>Lieu : {{ decode(appointment.address) }}</p>
+                                    <p>Durée : {{ durationBetween(appointment.time_start, appointment.time_end) }} minutes</p>
+                                    <p>Tarif : {{ monisation(appointment.price) }}</p>
+                                </div>
                             </div>
                             <div class="actions"><span @click="appointmentEdit(index, appointment)" class="edit">E</span><span @click="console.log(appointment.id)" class="delete">X</span></div>
                         </div>
                         <form :class="{invisible: index!==editingAppointment}" class="card-entries">
                             <div>
-                                <label :for="'name'+appointment.id">
-                                    Patient/e : 
-                                    <input v-model="editedAppointment.name" type="text" :name="'name'+appointment.id" :id="'name'+appointment.id">
-                                </label>
-                                <label :for="'email'+appointment.id">
-                                    Mail : 
-                                    <input v-model="editedAppointment.email" type="email" :name="'email'+appointment.id" :id="'email'+appointment.id">
-                                </label>
-                                <label :for="'telephone'+appointment.id">
-                                    Téléphone : 
-                                    <input v-model="editedAppointment.telephone" type="tel" :name="'telephone'+appointment.id" :id="'telephone'+appointment.id">
-                                </label>
-                                <label :for="'care'+appointment.id">
-                                    Soin : 
-                                    <select v-model="editedAppointment.care_id" :name="'care'+appointment.id" :id="'care'+appointment.id">
-                                        <option value="0">Bloquage d'horaire</option>
-                                        <option v-for="care in cares" :value="care.id" :key="care.id">{{ care.name }}</option>
-                                    </select>
-                                </label>
-                                <label :for="'address'+appointment.id">
-                                    Lieu : 
-                                    <input v-model="editedAppointment.address" type="text" :name="'address'+appointment.id" :id="'address'+appointment.id"> <button @click.prevent="editedAppointment.address='salon'">Au salon</button>
-                                </label>
-                                <label :for="'year'+appointment.id">
-                                    Date : 
-                                    <select v-model="editedAppointment.year_booked" :name="'year'+appointment.id" :id="'year'+appointment.id">
-                                        <option v-for="index in 50" :value="(new Date().getFullYear()-1+index).toString()" :key="'year'+index">{{ new Date().getFullYear()-1+index }}</option>
-                                    </select>
-                                    <select v-model="editedAppointment.month_booked" :name="'month'+appointment.id" :id="'month'+appointment.id">
-                                        <option v-for="index in 12" :value="index.toString().length<2?'0'+index.toString():index.toString()" :key="'month'+index">{{ index.toString().length<2?'0':'' }}{{ index.toString() }}</option>
-                                    </select>
-                                    <select v-model="editedAppointment.day_booked" :name="'day'+appointment.id" :id="'day'+appointment.id">
-                                        <option v-for="index in 31" :value="index.toString().length<2?'0'+index.toString():index.toString()" :key="'day'+index">{{ index.toString().length<2?'0':'' }}{{ index.toString() }}</option>
-                                    </select>
-                                </label>
-                                <label  :for="'time_start'+appointment.id">
-                                    Début : 
-                                    <input v-model="editedAppointment.time_start" type="number" step="5" :name="'time_start'+appointment.id" :id="'time_start'+appointment.id">
-                                     Durée : 
-                                     <input v-model="editedAppointment.duration" type="number" step="5" :name="'duration'+appointment.id" :id="'duration'+appointment.id">
-                                      minutes</label>
-                                <label v-if="appointment.time_depart!==appointment.time_start || appointment.time_return!==appointment.time_end">
-                                    Départ : {{ hourisation(appointment.time_depart) }} Retour : {{ hourisation(appointment.time_return) }}
-                                </label>
-                                <label  :for="'name'+appointment.id">
-                                    Tarif : {{ monisator(appointment.price) }}
-                                </label>
+                                <div>
+                                    <div>
+                                        <p>
+                                            <label :for="'year'+appointment.id">
+                                                Date : 
+                                                <select v-model="editedAppointment.year_booked" :name="'year'+appointment.id" :id="'year'+appointment.id">
+                                                    <option v-for="index in 50" :value="(new Date().getFullYear()-1+index).toString()" :key="'year'+index">{{ new Date().getFullYear()-1+index }}</option>
+                                                </select>
+                                                <select v-model="editedAppointment.month_booked" :name="'month'+appointment.id" :id="'month'+appointment.id">
+                                                    <option v-for="index in 12" :value="index.toString().length<2?'0'+index.toString():index.toString()" :key="'month'+index">{{ index.toString().length<2?'0':'' }}{{ index.toString() }}</option>
+                                                </select>
+                                                <select v-model="editedAppointment.day_booked" :name="'day'+appointment.id" :id="'day'+appointment.id">
+                                                    <option v-for="index in 31" :value="index.toString().length<2?'0'+index.toString():index.toString()" :key="'day'+index">{{ index.toString().length<2?'0':'' }}{{ index.toString() }}</option>
+                                                </select>
+                                                <span style="color: #aa3333" v-if="parseInt(editedAppointment.year_booked)<new Date().getFullYear()">
+                                                    Invalide
+                                                </span>
+                                                <span style="color: #aa3333" v-if="new Date().getFullYear()>parseInt(editedAppointment.year_booked)">
+                                                    Invalide
+                                                </span>
+                                                <span style="color: #aa3333" v-if="new Date().getFullYear()===parseInt(editedAppointment.year_booked) && new Date().getMonth()+1>parseInt(editedAppointment.month_booked)">
+                                                    Invalide
+                                                </span>
+                                                <span style="color: #aa3333" v-if="new Date().getFullYear()===parseInt(editedAppointment.year_booked) && new Date().getMonth()+1===parseInt(editedAppointment.month_booked) && new Date().getDate()>=parseInt(editedAppointment.day_booked)">
+                                                    Invalide
+                                                </span>
+                                            </label>
+                                        </p>
+                                        <span
+                                            class="button"
+                                            @click.prevent="{editedAppointment.time_start=0;editedAppointment.duration=24*60;editedAppointment.address='salon';}"
+                                            v-if="
+                                                (new Date().getFullYear()<parseInt(editedAppointment.year_booked) ||
+                                                (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
+                                                new Date().getMonth()+2<parseInt(editedAppointment.month_booked))
+                                                || (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
+                                                new Date().getMonth()+2===parseInt(editedAppointment.month_booked) &&
+                                                new Date().getDate()<parseInt(editedAppointment.day_booked))) &&
+                                                (cares.find(care => care.id === editedAppointment.care_id)?.is_home ||
+                                                cares.find(care => care.id === editedAppointment.care_id)?.is_structure ||
+                                                cares.find(care => care.id === editedAppointment.care_id)?.is_company)">
+                                                Toute la journée
+                                            </span>
+                                    </div>
+                                    <div>
+                                        <p>
+                                            <label  :for="'time_start'+appointment.id">
+                                                Début : 
+                                                <select v-model="editedAppointment.time_start" :name="'time_start'+appointment.id" :id="'time_start'+appointment.id">
+                                                    <option
+                                                        v-for="index in 24*12+1"
+                                                        :value="(Math.floor((index-1)*5/60)*100)+(Math.floor((index-1)*5%60))"
+                                                        :key="'time_start'+index"
+                                                        >
+                                                        {{ hourisation((Math.floor((index-1)*5/60)*100)+(Math.floor((index-1)*5%60))) }}
+                                                    </option>
+                                                </select>
+                                                Durée : 
+                                                <input
+                                                    v-model="editedAppointment.duration"
+                                                    type="number"
+                                                    :min="cares.find(care => care.id === editedAppointment.care_id)?.min_duration"
+                                                    :max="cares.find(care => care.id === editedAppointment.care_id)?.max_duration"
+                                                    step="5"
+                                                    :name="'duration'+appointment.id" :id="'duration'+appointment.id"
+                                                    >
+                                            </label>
+                                        </p>
+                                        <p>
+                                            <span
+                                                style="color: #aa3333"
+                                                v-if="
+                                                    editedAppointment.address==='salon' &&
+                                                    appointments.some(
+                                                        appointment => 
+                                                            appointment.id !== editedAppointment.id &&
+                                                            appointment.date_booked.split('-')[0] === editedAppointment.year_booked &&
+                                                            appointment.date_booked.split('-')[1] === editedAppointment.month_booked &&
+                                                            appointment.date_booked.slice(0,10).split('-')[2] === editedAppointment.day_booked &&
+                                                            appointment.time_return > editedAppointment.time_start &&
+                                                            appointment.time_depart < addMinutes(editedAppointment.time_start, editedAppointment.duration)
+                                                    )
+                                                "
+                                                >
+                                                Horaire déjà prise
+                                            </span>
+                                            <span
+                                                style="color: #aa3333"
+                                                v-if="
+                                                    editedAppointment.address!=='salon' &&
+                                                    appointments.some(
+                                                        appointment => 
+                                                            appointment.id !== editedAppointment.id &&
+                                                            appointment.date_booked.split('-')[0] === editedAppointment.year_booked &&
+                                                            appointment.date_booked.split('-')[1] === editedAppointment.month_booked &&
+                                                            appointment.date_booked.slice(0,10).split('-')[2] === editedAppointment.day_booked &&
+                                                            appointment.time_return > addMinutes(editedAppointment.time_start-100,30) &&
+                                                            appointment.time_depart < addMinutes(editedAppointment.time_start, editedAppointment.duration+30)
+                                                    )
+                                                "
+                                                >
+                                                Horaire déjà prise
+                                            </span>
+                                            <span v-if="editedAppointment.address!=='salon'">
+                                                Départ : {{ hourisation(addMinutes((editedAppointment.time_start-100),30)) }} Retour : {{ hourisation(addMinutes(addMinutes(editedAppointment.time_start,editedAppointment.duration),30)) }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p>
+                                        <label :for="'name'+appointment.id">
+                                            Patient/e : 
+                                            <input v-model="editedAppointment.name" type="text" :name="'name'+appointment.id" :id="'name'+appointment.id">
+                                            <span style="color: #aa3333" v-if="!editedAppointment.name">Requis</span>
+                                            <span style="color: #aa3333" v-if="editedAppointment.name && !editedAppointment.name.match(wordRegex)">Invalide</span>
+                                        </label>
+                                    </p>
+                                    <p>
+                                        <label :for="'email'+appointment.id">
+                                            E-mail : 
+                                            <input v-model="editedAppointment.email" type="email" :name="'email'+appointment.id" :id="'email'+appointment.id">
+                                            <span style="color: #aa3333" v-if="!editedAppointment.email">Requis</span>
+                                            <span style="color: #aa3333" v-if="editedAppointment.email && !editedAppointment.email.match(emailRegex)">Invalide</span>
+                                        </label>
+                                    </p>
+                                    <p>
+                                        <label :for="'telephone'+appointment.id">
+                                            Téléphone : 
+                                            <input v-model="editedAppointment.telephone" type="tel" :name="'telephone'+appointment.id" :id="'telephone'+appointment.id">
+                                            <span style="color: #aa3333" v-if="!editedAppointment.telephone">Requis</span>
+                                            <span style="color: #aa3333" v-if="editedAppointment.telephone && !editedAppointment.telephone.match(telRegex)">Invalide</span>
+                                        </label>
+                                    </p>
+                                </div>
+                                <div>
+                                    <p>
+                                        <label :for="'care'+appointment.id">
+                                            Soin : 
+                                            <select v-model="editedAppointment.care_id" :name="'care'+appointment.id" :id="'care'+appointment.id">
+                                                <option value="0">Bloquage d'horaire</option>
+                                                <option v-for="care in cares" :value="care.id" :key="care.id">{{ decode(care.name) }}</option>
+                                            </select>
+                                        </label>
+                                    </p>
+                                    <p>
+                                        <label :for="'address'+appointment.id">
+                                            Lieu : 
+                                            <input v-model="editedAppointment.address" type="text" :name="'address'+appointment.id" :id="'address'+appointment.id"> <span class="button" @click.prevent="editedAppointment.address='salon'">Au salon</span>
+                                        </label>
+                                        <span style="color: #aa3333" v-if="!editedAppointment.address">Requis</span>
+                                        <span style="color: #aa3333" v-if="editedAppointment.address && !editedAppointment.address.match(addressRegex)">Invalide</span>
+                                    </p>
+                                    <p>
+                                        <label  :for="'name'+appointment.id">
+                                            Tarif : {{ monisation(Math.floor(((cares.find(care => care.id === appointment.care_id)?.price || 0)/60*editedAppointment.duration)+(editedAppointment.address==='salon'?0:(cares.find(care => care.id === appointment.care_id)?.travel_expenses || 0)))) }}
+                                        </label>
+                                    </p>
+                                </div>
                             </div>
-                            <!-- TODO Envoi en BDD -->
-                            <div class="actions"><span @click="console.log(editedAppointment)" class="edit">O</span><span @click="editingAppointment=null" class="delete">X</span></div>
+                            <div class="actions"><span @click="updateAppointment" class="edit">O</span><span @click="editingAppointment=null" class="delete">X</span></div>
                         </form>
                     </div>
                     <div class="card-entries" @click="console.log('add')">
                         <p>+</p>
                     </div>
-            </div>
+                </div>
             </div>
         </div>
         <div class="card">
@@ -116,12 +283,30 @@
                     <p v-if="!isLoading && cares.length<1">Aucun soin</p>
                 </div>
                 <div class="card-content" v-if="!isLoading && cares.length">
-                    <div class="card-entries" v-for="care in cares" :key="care.id">
-                        <p>{{ care }}</p>
-                        <p>{{ decode(care.name) }}</p>
-                        <p>{{ decode(care.short_description) }}</p>
-                    <p>{{ care.price }}</p>
-                    <div class="actions"><span @click="console.log(care.id)" class="edit">E</span><span @click="console.log(care.id)" class="delete">X</span></div>
+                    <div class="entry-wrapper" v-for="care in cares" :key="care.id">
+                        <div class="card-entries">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>{{ decode(care.name) }}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p>{{ decode(care.short_description) }}</p>
+                                </div>
+                                <div>
+                                    <div>
+                                        <p>Durée : {{ care.min_duration }} minutes à {{ care.max_duration }} minutes</p>
+                                        <p>Déplacement : {{ !care.is_home&&!care.is_structure&&!care.is_company?'Non':'Oui' }} {{ care.is_home||care.is_structure||care.is_company?'Frais de déplacement : '+monisation(care.travel_expenses):'' }}</p>
+                                    </div>
+                                    <div>
+                                        <p>Prix : {{ monisation(care.price) }} /h</p>
+                                        <p>TVA : {{ care.tax/100 }}%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        <div class="actions"><span @click="console.log(care.id)" class="edit">E</span><span @click="console.log(care.id)" class="delete">X</span></div>
+                    </div>
                 </div>
                 <div class="card-entries" @click="console.log('add')">
                     <p>+</p>
@@ -139,9 +324,20 @@
                     <p v-if="!isLoading && events.length<1">Aucun évenement</p>
                 </div>
                 <div class="card-content" v-if="!isLoading && events.length">
-                    <div class="card-entries" v-for="event in events" :key="event.id">
-                        <p>{{ event }}</p>
-                        <div class="actions"><span @click="console.log(event.id)" class="edit">E</span><span @click="console.log(event.id)" class="delete">X</span></div>
+                    <div class="entry-wrapper" v-for="event in events" :key="event.id">
+                        <div class="card-entries">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>{{ event.title }}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p>{{ event.short_text }}</p>
+                                </div>
+                            </div>
+                            <div class="actions"><span @click="console.log(event.id)" class="edit">E</span><span @click="console.log(event.id)" class="delete">X</span></div>
+                        </div>
                     </div>
                     <div class="card-entries" @click="console.log('add')">
                         <p>+</p>
@@ -157,16 +353,31 @@
                 <div class="loading">
                     <LoadingSpinner v-if="isLoading"/>
                     <p v-if="!isLoading && guestbook.length<1">Aucune signature</p>
-            </div>
-            <div class="card-content" v-if="!isLoading && guestbook.length">
-                <div class="card-entries" v-for="guest in guestbook" :key="guest.id">
-                    <p>{{ guest }}</p>
-                    <div class="actions"><span @click="console.log(guest.id)" class="delete">X</span></div>
+                </div>
+                <div class="card-content" v-if="!isLoading && guestbook.length">
+                    <div class="entry-wrapper" v-for="guest in guestbook" :key="guest.id">
+                        <div class="card-entries">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>{{ decode(guest.name) }}</p>
+                                    </div>
+                                    <p>{{ decode(cares.find(care => care.id === guest.care_id)?.name || '') }}</p>
+                                </div>
+                                <div>
+                                    <p>{{ decode(guest.title) }}</p>
+                                </div>
+                                <div>
+                                    <p>{{ decode(guest.text) }}</p>
+                                </div>
+                            </div>
+                            <div class="actions"><span @click="console.log(guest.id)" class="edit">V</span><span @click="console.log(guest.id)" class="delete">X</span></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 </template>
 
 <script setup lang="ts">
@@ -175,7 +386,8 @@ import { decode } from 'he';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import hourisation from '@/modules/hourisation';
 import durationBetween from '@/modules/durationBetween';
-import monisator from '@/modules/monisation';
+import monisation from '@/modules/monisation';
+import addMinutes from '@/modules/addMinutes';
 
 const token = ref<string>(localStorage.getItem('token')||'');
 const users = ref();
@@ -186,6 +398,7 @@ const guestbook = ref();
 const isLoading = ref<boolean>(true);
 const loadingError = ref<string>('');
 const editingAppointment = ref<number>();
+const editingUser = ref<number>();
 const editedAppointment = ref({
     id: 0,
     care_id: 0,
@@ -199,6 +412,12 @@ const editedAppointment = ref({
     month_booked: '',
     day_booked: '',
     duration: 0
+});
+const editedUser = ref({
+    id: 0,
+    email: '',
+    password: '',
+    password_confirm: ''
 });
 const usersContent = ref(null);
 const appointmentsContent = ref(null);
@@ -216,6 +435,11 @@ const caresHeight = ref("0px");
 const eventsHeight = ref("0px");
 const guestbookHeight = ref("0px");
 let resizeObserver;
+
+const wordRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']{1,255}$/;
+const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
+const telRegex = /^[0-9]{10,13}$/;
+const addressRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\-']{1,255}$/;
 
 const toggleUsers = async () => {
     usersOpen.value = !usersOpen.value;
@@ -257,14 +481,86 @@ const toggleGuestbook = async () => {
     : "0px";
 };
 
-const appointmentEdit = (index, appointment) => {
+const appointmentEdit = async (index :number, appointment) :void => {
     editingAppointment.value = index;
-    editedAppointment.value = appointment;
-    editedAppointment.value.date_booked = appointment.date_booked.slice(0,10);
-    editedAppointment.value.year_booked = appointment.date_booked.split('-')[0];
-    editedAppointment.value.month_booked = appointment.date_booked.split('-')[1];
-    editedAppointment.value.day_booked = appointment.date_booked.split('-')[2];
-    editedAppointment.value.duration = durationBetween(appointment.time_start, appointment.time_end);
+    editedAppointment.value = transformAppointment(appointment);
+    await nextTick();
+    usersHeight.value = appointmentsContent.value.scrollHeight + "px";
+}
+
+const userEdit = async (index :number, user) :void => {
+    editingUser.value = index;
+    editedUser.value = transformUser(user);
+    await nextTick();
+    usersHeight.value = usersContent.value.scrollHeight + "px";
+}
+
+const transformAppointment = (appointment) => ({
+    ...appointment,
+    address: decode(appointment.address),
+    name: decode(appointment.name),
+    email: decode(appointment.email),
+    date_booked: appointment.date_booked.slice(0,10),
+    year_booked: appointment.date_booked.split('-')[0],
+    month_booked: appointment.date_booked.split('-')[1],
+    day_booked: appointment.date_booked.slice(0,10).split('-')[2],
+    duration: durationBetween(appointment.time_start, appointment.time_end),
+});
+
+const transformUser = (user) => ({
+    ...user,
+    email: decode(user.email),
+    password: '',
+    password_confirm: '',
+});
+
+const updateUser = async () => {
+    console.log(editedUser);
+    editingUser.value = undefined;
+}
+
+const updateAppointment = async () => {
+    editedAppointment.value.date_booked = `${editedAppointment.value.year_booked}-${editedAppointment.value.month_booked}-${editedAppointment.value.day_booked}`;
+    const id = editedAppointment.value.id;
+    const updatingAppointment = {
+        care_id: editedAppointment.value.care_id,
+        address: editedAppointment.value.address,
+        name: editedAppointment.value.name,
+        email: editedAppointment.value.email,
+        telephone: editedAppointment.value.telephone,
+        date_booked: editedAppointment.value.date_booked,
+        time_start: editedAppointment.value.time_start,
+        duration: editedAppointment.value.duration
+    }
+    try {
+        const res = await fetch(`http://localhost:3000/api/appointments/update/${id}`, {
+          method: "put",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`},
+          body: JSON.stringify(updatingAppointment)
+        });
+        if(res.status!==200){
+            console.log(res);
+            appointmentEdit(editingAppointment, editedAppointment);
+            return;
+        }
+        else{
+            console.log(res);
+            const updatedIndex = appointments.value.findIndex((app) => app.id === id);
+            if (updatedIndex !== -1) {
+                appointments.value[updatedIndex] = {
+                    ...appointments.value[updatedIndex],
+                    ...updatingAppointment,
+                };
+                editingAppointment.value = undefined;
+            }
+            console.log(appointments.value)
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+    }
+    editingAppointment.value = undefined;
+    // TODO feedback de validation
 }
 
 onMounted(async () => {
@@ -364,6 +660,30 @@ p, h3 {
     border-radius: 5px;
 }
 
+.card-entries>div:first-of-type {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-entries>div:first-of-type>div:first-of-type {
+    display: flex;
+    justify-content: space-between;
+}
+
+.card-entries>div:first-of-type>div:first-of-type>div {
+    font-weight: bold;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-entries>div:first-of-type>div:first-of-type>div:last-of-type {
+    text-align: end;
+}
+
+.card-entries>div:first-of-type {
+    gap: 0.5rem;
+}
+
 .entry-wrapper:nth-of-type(even)>.card-entries {
     background-color: #eaccda;
 }
@@ -381,7 +701,6 @@ p, h3 {
 
 .delete {
     color: #aa3333;
-    cursor: pointer;
 }
 
 h3 {
@@ -389,6 +708,19 @@ h3 {
     color: #fbf9ea;
     /* background-color: #B398C9; */
     background-color: #234899;
+    border-radius: 5px;
+}
+
+h3, .edit, .delete, .button {
+    cursor: pointer;
+}
+
+.button {
+    color: #fbf9ea;
+    background-color: #234899;
+    width: 100%;
+    padding: 0 10px;
+    border: #fbf9ea solid 1px;
     border-radius: 5px;
 }
 
@@ -408,13 +740,16 @@ h3 {
 }
 
 @media only screen and (min-width: 770px) {
-  .card-entries {
-      padding: 1rem 3rem;
-}
-.card-entries>div:first-of-type {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
+    .card-entries {
+        padding: 1rem 3rem;
+    }
+
+    .card-entries>div:first-of-type {
+        gap: 0.75rem;
+    }
+
+    .button {
+        width: fit-content;
+    }
 }
 </style>

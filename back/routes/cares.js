@@ -25,7 +25,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter });
 
 const wordRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']{1,255}$/;
-const descriptionRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\-']{1,255}$/;
+const descriptionRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ,.:!?$€£¥)(\s\-']{1,255}$/;
 const formatSlug = (text) =>{
     text = text.toString();
     text = text.replace(/[àáâäãÀÁÂÄÃ]/g,'a');

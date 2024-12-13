@@ -12,7 +12,7 @@ const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-
 const telRegex = /^[0-9]{10,13}$/;
 const addressRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\-']{1,255}$/;
 const dateRegex = /^20[0-9]{2}-[0-9]{2}-[0-9]{2}$/;
-const timeRegex = /^[0-9]{4}$/;
+
 
 const appointmentsSchema = {
     type: "object",
@@ -32,7 +32,7 @@ const appointmentsSchema = {
 const appointmentsValidate = ajv.compile(appointmentsSchema);
 
 router.get('/', (req, res) => {
-    const sql = 'SELECT * FROM appointments ORDER BY date_booked DESC, time_start DESC';
+    const sql = 'SELECT * FROM appointments ORDER BY date_booked, time_start';
     db.query(sql, (err, results) => {
         if(err){
             return res.status(500).json({ error: 'Erreur serveur', details: err });
@@ -84,7 +84,7 @@ router.post('/create', async (req, res) => {
         console.error('Durée invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Durée invalide.' });
     }
-    const time_end = addMinutes(time_start, duration);
+    const time_end = duration===0?2400:addMinutes(time_start, duration);
     const time_depart = address==="salon"||time_start===0?time_start:addMinutes(time_start-100,30);
     const time_return = address==="salon"||time_start===0?time_end:addMinutes(time_end,30);
     let price = 0;
@@ -190,7 +190,9 @@ router.put('/update/:id',  async (req, res) => {
         console.error('Durée invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Durée invalide.' });
     }
-    const time_end = addMinutes(time_start, duration);
+    console.log(duration)
+    const time_end = duration===1440?2400:addMinutes(time_start, duration);
+    console.log(duration, time_end)
     const time_depart = address==="salon"||time_start===0?time_start:addMinutes(time_start-100,30);
     const time_return = address==="salon"||time_start===0?time_end:addMinutes(time_end,30);
     let price = 0;
