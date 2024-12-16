@@ -3,30 +3,29 @@ const router = express.Router();
 const db = require('../modules/database.js');
 const authorizationJWT = require('../modules/auth.js');
 const he = require('he');
-const eh = require('escape-html');
 const Ajv = require('ajv');
 const ajv = new Ajv();
 const multer = require('multer');
 const path = require('path');
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, 'uploads/');
+        cb(null, 'uploads/');
     },
     filename: (req, file, cb) => {
-      cb(null, `${Date.now()}-${file.originalname}`);
+        cb(null, `${Date.now()}-${file.originalname}`);
     },
-  });
+});
 const fileFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
+        cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed!'), false);
+        cb(new Error('Only image files are allowed!'), false);
     }
-  };
+};
 const upload = multer({ storage, fileFilter });
 
 const wordRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']{1,255}$/;
-const descriptionRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\-']{1,255}$/;
+const descriptionRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ,.:!?$€£¥)(\s\-']{1,255}$/;
 const formatSlug = (text) =>{
     text = text.toString();
     text = text.replace(/[àáâäãÀÁÂÄÃ]/g,'a');
@@ -48,23 +47,23 @@ const formatSlug = (text) =>{
 const caresSchema = {
     type: "object",
     properties: {
-      name: {type: "string"},
-      short_description: {type: "string"},
-      description: {type: "string"},
-      min_duration: {type: "integer"},
-      max_duration: {type: "integer"},
-      price: {type: "integer"},
-      tax: {type: "integer"},
-      travel_expenses: {type: "integer"},
-      is_whole_day: {type: "boolean"},
-      is_home: {type: "boolean"},
-      is_salon: {type: "boolean"},
-      is_company: {type: "boolean"},
-      is_structure: {type: "boolean"},
-      filesdescriptions: {
+        name: {type: "string"},
+        short_description: {type: "string"},
+        description: {type: "string"},
+        min_duration: {type: "integer"},
+        max_duration: {type: "integer"},
+        price: {type: "integer"},
+        tax: {type: "integer"},
+        travel_expenses: {type: "integer"},
+        is_whole_day: {type: "boolean"},
+        is_home: {type: "boolean"},
+        is_salon: {type: "boolean"},
+        is_company: {type: "boolean"},
+        is_structure: {type: "boolean"},
+        filesdescriptions: {
         type: "array",
         items: { type: "string" }
-      }
+        }
     },
     required: ["name", "short_description", "description", "min_duration", "max_duration", "price", "tax", "travel_expenses", "is_whole_day", "is_home", "is_salon", "is_company", "is_structure", "filesdescriptions"],
     additionalProperties: false
@@ -81,10 +80,10 @@ router.get('/', (req, res) => {
     });
 });
 
-router.get('/:id', (req, res) => {
-    const { id } = req.params;
-    const sql = 'SELECT * FROM cares WHERE id = ?';
-    db.query(sql, [id], (err, results) => {
+router.get('/:slug', (req, res) => {
+    const { slug } = req.params;
+    const sql = 'SELECT * FROM cares WHERE slug = ?';
+    db.query(sql, [slug], (err, results) => {
         if(err){
             return res.status(500).json({ error: 'Erreur serveur', details: err });
         }
@@ -153,7 +152,7 @@ router.post('/create', upload.array('images', 12), async (req, res) => {
         return res.status(400).json({ error: 'Erreur requête', details: 'Nom déjà pris.' });
         }
         const sql2 = 'INSERT INTO cares (name, slug, short_description, description, min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, filesnames, filespaths, filesdescriptions) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
-        db.query(sql2, [eh(name), slug, eh(short_description), he.encode(description), min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions)], (err, results) => {
+        db.query(sql2, [he.encode(name), slug, he.encode(short_description), he.encode(description), min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions)], (err, results) => {
             if (err) {
                 console.error('Erreur SQL :', err);
                 return res.status(500).json({ error: 'Erreur serveur', details: err });
@@ -225,7 +224,7 @@ router.put('/update/:id', upload.array('images', 12), async (req, res) => {
         return res.status(400).json({ error: 'Erreur requête', details: 'Nom déjà pris.' });
         }
         const sql2 = 'UPDATE cares SET name = ?, slug = ?, short_description = ?, description = ?, min_duration = ?, max_duration = ?, price = ?, tax = ?, travel_expenses = ?, is_whole_day = ?, is_home = ?, is_salon = ?, is_company = ?, is_structure = ?, filesnames = ?, filespaths = ?, filesdescriptions = ? WHERE id = ?';
-        db.query(sql2, [eh(name), slug, eh(short_description), he.encode(description), min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions), id], (err, results) => {
+        db.query(sql2, [he.encode(name), slug, he.encode(short_description), he.encode(description), min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions), id], (err, results) => {
             if (err) {
                 console.error('Erreur SQL :', err);
                 return res.status(500).json({ error: 'Erreur serveur', details: err });
