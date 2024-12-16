@@ -9,19 +9,19 @@ const multer = require('multer');
 const path = require('path');
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, 'uploads/');
+        cb(null, 'uploads/');
     },
     filename: (req, file, cb) => {
-      cb(null, `${Date.now()}-${file.originalname}`);
+        cb(null, `${Date.now()}-${file.originalname}`);
     },
-  });
+});
 const fileFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
+        cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed!'), false);
+        cb(new Error('Only image files are allowed!'), false);
     }
-  };
+};
 const upload = multer({ storage, fileFilter });
 
 const wordRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']{1,255}$/;
@@ -47,23 +47,23 @@ const formatSlug = (text) =>{
 const caresSchema = {
     type: "object",
     properties: {
-      name: {type: "string"},
-      short_description: {type: "string"},
-      description: {type: "string"},
-      min_duration: {type: "integer"},
-      max_duration: {type: "integer"},
-      price: {type: "integer"},
-      tax: {type: "integer"},
-      travel_expenses: {type: "integer"},
-      is_whole_day: {type: "boolean"},
-      is_home: {type: "boolean"},
-      is_salon: {type: "boolean"},
-      is_company: {type: "boolean"},
-      is_structure: {type: "boolean"},
-      filesdescriptions: {
+        name: {type: "string"},
+        short_description: {type: "string"},
+        description: {type: "string"},
+        min_duration: {type: "integer"},
+        max_duration: {type: "integer"},
+        price: {type: "integer"},
+        tax: {type: "integer"},
+        travel_expenses: {type: "integer"},
+        is_whole_day: {type: "boolean"},
+        is_home: {type: "boolean"},
+        is_salon: {type: "boolean"},
+        is_company: {type: "boolean"},
+        is_structure: {type: "boolean"},
+        filesdescriptions: {
         type: "array",
         items: { type: "string" }
-      }
+        }
     },
     required: ["name", "short_description", "description", "min_duration", "max_duration", "price", "tax", "travel_expenses", "is_whole_day", "is_home", "is_salon", "is_company", "is_structure", "filesdescriptions"],
     additionalProperties: false

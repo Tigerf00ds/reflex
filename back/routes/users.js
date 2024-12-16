@@ -13,8 +13,8 @@ const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-
 const emailPassSchema = {
     type: "object",
     properties: {
-      email: {type: "string"},
-      password: {type: "string"}
+        email: {type: "string"},
+        password: {type: "string"}
     },
     required: ["email", "password"],
     additionalProperties: false

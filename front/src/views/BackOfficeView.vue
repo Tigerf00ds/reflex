@@ -2,6 +2,7 @@
     <div class="wrapper">
         <h2>Back-office</h2>
         <div class="card">
+            {{ editedUser.email }}
             <h3  @click="toggleUsers">Comptes administrateurs</h3>
             <div ref="usersContent" 
                 class="menu-content" 
@@ -515,7 +516,36 @@ const transformUser = (user) => ({
 });
 
 const updateUser = async () => {
-    console.log(editedUser);
+    const id = editedUser.value.id;
+    const updatingUser = {
+        email : editedUser.value.email,
+        password : editedUser.value.password
+    }
+    try {
+        const res = await fetch(`http://localhost:3000/api/users/update/${id}`, {
+          method: "put",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`},
+          body: JSON.stringify(updatingUser)
+        });
+        if(res.status!==200){
+            userEdit(editingUser.value, editedUser.value);
+            editingUser.value = undefined;
+            return;
+        }
+        else{
+            const updatedIndex = users.value.findIndex((app) => app.id === id);
+            if (updatedIndex !== -1) {
+                users.value[updatedIndex] = {
+                    ...users.value[updatedIndex],
+                    ...updatingUser,
+                };
+            }
+            editingUser.value = undefined;
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+    }
     editingUser.value = undefined;
 }
 
@@ -539,27 +569,24 @@ const updateAppointment = async () => {
           body: JSON.stringify(updatingAppointment)
         });
         if(res.status!==200){
-            console.log(res);
-            appointmentEdit(editingAppointment, editedAppointment);
+            appointmentEdit(editingAppointment.value, editedAppointment.value);
+            editingAppointment.value = undefined;
             return;
         }
         else{
-            console.log(res);
             const updatedIndex = appointments.value.findIndex((app) => app.id === id);
             if (updatedIndex !== -1) {
                 appointments.value[updatedIndex] = {
                     ...appointments.value[updatedIndex],
                     ...updatingAppointment,
                 };
-                editingAppointment.value = undefined;
             }
-            console.log(appointments.value)
+            editingAppointment.value = undefined;
             return;
         }
     } catch(err) {
         console.error(err);
     }
-    editingAppointment.value = undefined;
     // TODO feedback de validation
 }
 

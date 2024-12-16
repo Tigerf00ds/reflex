@@ -4,8 +4,10 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const db = require('./modules/database.js');
 const usersRoutes = require('./routes/users.js');
+const miscellaneous_textsRoutes = require('./routes/miscellaneous_texts.js');
 const caresRoutes = require('./routes/cares.js');
 const appointmentsRoutes = require('./routes/appointments.js');
+const banned_usersRoutes = require('./routes/banned_users.js');
 const eventsRoutes = require('./routes/events.js');
 const guestbookRoutes = require('./routes/guestbook.js');
 const helmet = require('helmet');
@@ -49,8 +51,10 @@ app.use(
     })
    );   
 app.use('/api/users', usersRoutes);
+app.use('/api/miscellaneous_texts', miscellaneous_textsRoutes);
 app.use('/api/cares', caresRoutes);
 app.use('/api/appointments', appointmentsRoutes);
+app.use('/api/banned_users', banned_usersRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/guestbook', guestbookRoutes);
 
