@@ -1,8 +1,12 @@
 <template>
+    <InfoModal 
+        :isOpen="modalOpen"
+        :title="modalTitle"
+        :text="modalText"
+        @emitModal="modalOpen=false"/>
     <div class="wrapper">
-        <h2>Back-office</h2>
+        <h2 @click="modalOpen=true">Back-office</h2>
         <div class="card">
-            {{ editedUser.email }}
             <h3  @click="toggleUsers">Comptes administrateurs</h3>
             <div ref="usersContent" 
                 class="menu-content" 
@@ -57,7 +61,23 @@
                                     </p>
                                 </div>
                             </div>
-                            <div class="actions"><span @click="updateUser" class="edit">O</span><span @click="editingUser=null" class="delete">X</span></div>
+                            <div class="actions">
+                                <span v-if="
+                                    !editedUser.email ||
+                                    !editedUser.email.match(emailRegex) ||
+                                    !editedUser.password.match(/.{10,255}/) ||
+                                    !editedUser.password.match(/[a-z]/) ||
+                                    !editedUser.password.match(/[A-Z]/) ||
+                                    !editedUser.password.match(/[0-9]/) ||
+                                    !editedUser.password.match(/[!@#$%^&*(),;.?:{}|<>]/) ||
+                                    !editedUser.password_confirm ||
+                                    editedUser.password_confirm !== editedUser.password
+                                ">
+                                    O
+                                </span>
+                                <span v-else @click="updateUser" class="edit">O</span>
+                                <span @click="editingUser=null" class="delete">X</span>
+                            </div>
                         </form>
                     </div>
                     <div class="card-entries" @click="console.log('add')">
@@ -92,7 +112,7 @@
                                 <div>
                                     <p>Patient/e : {{ decode(appointment.name) }}</p>
                                     <p>E-mail : <a :href="'mailto:'+decode(appointment.email)">{{ decode(appointment.email) }}</a></p>
-                                    <p>Téléphone : <a :href="'tel:'+decode(appointment.telephone)">{{ decode(appointment.telephone)}}</a></p>
+                                    <p>Téléphone : <a :href="'tel:'+decode(appointment.telephone)">{{ decode(appointment.telephone)}}</a> <span>{{ banned_users.find(user => user.telephone === appointment.telephone)?"Numéro banni":"" }}</span></p>
                                 </div>
                                 <div>
                                     <p>Soin : {{ decode(cares.find(care => care.id === appointment.care_id)?.name || 'Horaire bloqué')  }}</p>
@@ -139,13 +159,14 @@
                                             v-if="
                                                 (new Date().getFullYear()<parseInt(editedAppointment.year_booked) ||
                                                 (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
-                                                new Date().getMonth()+2<parseInt(editedAppointment.month_booked))
-                                                || (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
+                                                new Date().getMonth()+2<parseInt(editedAppointment.month_booked)) ||
+                                                (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
                                                 new Date().getMonth()+2===parseInt(editedAppointment.month_booked) &&
                                                 new Date().getDate()<parseInt(editedAppointment.day_booked))) &&
                                                 (cares.find(care => care.id === editedAppointment.care_id)?.is_home ||
                                                 cares.find(care => care.id === editedAppointment.care_id)?.is_structure ||
-                                                cares.find(care => care.id === editedAppointment.care_id)?.is_company)">
+                                                cares.find(care => care.id === editedAppointment.care_id)?.is_company ||
+                                                editedAppointment.care_id == 0)">
                                                 Toute la journée
                                             </span>
                                     </div>
@@ -237,6 +258,7 @@
                                             <input v-model="editedAppointment.telephone" type="tel" :name="'telephone'+appointment.id" :id="'telephone'+appointment.id">
                                             <span style="color: #aa3333" v-if="!editedAppointment.telephone">Requis</span>
                                             <span style="color: #aa3333" v-if="editedAppointment.telephone && !editedAppointment.telephone.match(telRegex)">Invalide</span>
+                                            <span v-if="banned_users.find(user => user.telephone === editedAppointment.telephone)">Numéro banni</span>
                                         </label>
                                     </p>
                                 </div>
@@ -244,7 +266,14 @@
                                     <p>
                                         <label :for="'care'+appointment.id">
                                             Soin : 
-                                            <select v-model="editedAppointment.care_id" :name="'care'+appointment.id" :id="'care'+appointment.id">
+                                            <select
+                                                v-model="editedAppointment.care_id"
+                                                @change="{
+                                                    if(editedAppointment.duration>cares.find(care => care.id === editedAppointment.care_id)?.max_duration)editedAppointment.duration=cares.find(care => care.id === editedAppointment.care_id)?.max_duration;
+                                                    if(editedAppointment.duration<cares.find(care => care.id === editedAppointment.care_id)?.min_duration)editedAppointment.duration=cares.find(care => care.id === editedAppointment.care_id)?.min_duration;
+                                                    }"
+                                                :name="'care'+appointment.id"
+                                                :id="'care'+appointment.id">
                                                 <option value="0">Bloquage d'horaire</option>
                                                 <option v-for="care in cares" :value="care.id" :key="care.id">{{ decode(care.name) }}</option>
                                             </select>
@@ -253,19 +282,62 @@
                                     <p>
                                         <label :for="'address'+appointment.id">
                                             Lieu : 
-                                            <input v-model="editedAppointment.address" type="text" :name="'address'+appointment.id" :id="'address'+appointment.id"> <span class="button" @click.prevent="editedAppointment.address='salon'">Au salon</span>
+                                            <input v-model="editedAppointment.address" type="text" :name="'address'+appointment.id" :id="'address'+appointment.id"> <span v-if="cares.find(care => care.id === editedAppointment.care_id)?.is_salon" class="button" @click.prevent="editedAppointment.address='salon'">Au salon</span>
                                         </label>
                                         <span style="color: #aa3333" v-if="!editedAppointment.address">Requis</span>
                                         <span style="color: #aa3333" v-if="editedAppointment.address && !editedAppointment.address.match(addressRegex)">Invalide</span>
                                     </p>
                                     <p>
-                                        <label  :for="'name'+appointment.id">
-                                            Tarif : {{ monisation(Math.floor(((cares.find(care => care.id === appointment.care_id)?.price || 0)/60*editedAppointment.duration)+(editedAppointment.address==='salon'?0:(cares.find(care => care.id === appointment.care_id)?.travel_expenses || 0)))) }}
+                                        <label  :for="'price'+appointment.id">
+                                            Tarif : {{ monisation(Math.floor(((cares.find(care => care.id === editedAppointment.care_id)?.price || 0)/60*editedAppointment.duration)+(editedAppointment.address==='salon'?0:(cares.find(care => care.id === editedAppointment.care_id)?.travel_expenses || 0)))) }}
                                         </label>
                                     </p>
                                 </div>
                             </div>
-                            <div class="actions"><span @click="updateAppointment" class="edit">O</span><span @click="editingAppointment=null" class="delete">X</span></div>
+                            <div class="actions">
+                                <span v-if="
+                                        parseInt(editedAppointment.year_booked)<new Date().getFullYear() ||
+                                        new Date().getFullYear()>parseInt(editedAppointment.year_booked) ||
+                                        new Date().getFullYear()===parseInt(editedAppointment.year_booked) && new Date().getMonth()+1>parseInt(editedAppointment.month_booked) ||
+                                        new Date().getFullYear()===parseInt(editedAppointment.year_booked) && new Date().getMonth()+1===parseInt(editedAppointment.month_booked) && new Date().getDate()>=parseInt(editedAppointment.day_booked) ||
+                                        (
+                                            editedAppointment.address==='salon' &&
+                                                    appointments.some(
+                                                        appointment => 
+                                                            appointment.id !== editedAppointment.id &&
+                                                            appointment.date_booked.split('-')[0] === editedAppointment.year_booked &&
+                                                            appointment.date_booked.split('-')[1] === editedAppointment.month_booked &&
+                                                            appointment.date_booked.slice(0,10).split('-')[2] === editedAppointment.day_booked &&
+                                                            appointment.time_return > editedAppointment.time_start &&
+                                                            appointment.time_depart < addMinutes(editedAppointment.time_start, editedAppointment.duration)
+                                                    )
+                                        ) ||
+                                        (
+                                            editedAppointment.address!=='salon' &&
+                                                    appointments.some(
+                                                        appointment => 
+                                                            appointment.id !== editedAppointment.id &&
+                                                            appointment.date_booked.split('-')[0] === editedAppointment.year_booked &&
+                                                            appointment.date_booked.split('-')[1] === editedAppointment.month_booked &&
+                                                            appointment.date_booked.slice(0,10).split('-')[2] === editedAppointment.day_booked &&
+                                                            appointment.time_return > addMinutes(editedAppointment.time_start-100,30) &&
+                                                            appointment.time_depart < addMinutes(editedAppointment.time_start, editedAppointment.duration+30)
+                                                    )
+                                        ) ||
+                                        !editedAppointment.name ||
+                                        !editedAppointment.name.match(wordRegex) ||
+                                        !editedAppointment.email ||
+                                        !editedAppointment.email.match(emailRegex) ||
+                                        !editedAppointment.telephone ||
+                                        !editedAppointment.telephone.match(telRegex) ||
+                                        !editedAppointment.address ||
+                                        !editedAppointment.address.match(addressRegex)
+                                ">
+                                    O
+                                </span>
+                                <span v-else @click="updateAppointment" class="edit">O</span>
+                                <span @click="editingAppointment=null" class="delete">X</span>
+                            </div>
                         </form>
                     </div>
                     <div class="card-entries" @click="console.log('add')">
@@ -307,13 +379,13 @@
                                 </div>
                             </div>
                         <div class="actions"><span @click="console.log(care.id)" class="edit">E</span><span @click="console.log(care.id)" class="delete">X</span></div>
+                        </div>
+                    </div>
+                    <div class="card-entries" @click="console.log('add')">
+                        <p>+</p>
                     </div>
                 </div>
-                <div class="card-entries" @click="console.log('add')">
-                    <p>+</p>
-                </div>
             </div>
-        </div>
         </div>
         <div class="card">
             <h3 @click="toggleEvents">Évenements</h3>
@@ -347,6 +419,36 @@
             </div>
         </div>
         <div class="card">
+            <h3  @click="toggleMiscellaneous_texts">Textes du site</h3>
+            <div ref="miscellaneous_textsContent" 
+                class="menu-content" 
+                :style="{ maxHeight: miscellaneous_textsOpen ? miscellaneous_textsHeight : '0px' }">
+                <div class="loading">
+                    <LoadingSpinner v-if="isLoading"/>
+                    <p v-if="!isLoading && miscellaneous_texts.length<1">Aucune signature</p>
+                </div>
+                <div class="card-content" v-if="!isLoading && miscellaneous_texts.length">
+                    <div class="entry-wrapper" v-for="misc in miscellaneous_texts" :key="misc.id">
+                        <div class="card-entries">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>{{ miscellaneous_texts[0]===misc?"Phrase d'accroche":"Texte de la page d'info" }}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p>{{ decode(misc.text) }}</p>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <span @click="console.log(misc.id)" class="edit">E</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
             <h3  @click="toggleGuestbook">Livre d'or</h3>
             <div ref="guestbookContent" 
                 class="menu-content" 
@@ -361,19 +463,55 @@
                             <div>
                                 <div>
                                     <div>
-                                        <p>{{ decode(guest.name) }}</p>
+                                        <p>{{ decode(guest.title) }}</p>
                                     </div>
+                                    <p>{{ guest.is_displayed?'Visible':'Non Visible' }}</p>
+                                </div>
+                                <div>
+                                    <p>{{ decode(guest.name) }}</p>
+                                    <p>{{ decode(guest.telephone) }} {{ banned_users.find(user => user.telephone === guest.telephone)?"Numéro banni":"" }}</p>
+                                </div>
+                                <div>
                                     <p>{{ decode(cares.find(care => care.id === guest.care_id)?.name || '') }}</p>
-                                </div>
-                                <div>
-                                    <p>{{ decode(guest.title) }}</p>
-                                </div>
-                                <div>
-                                    <p>{{ decode(guest.text) }}</p>
+                                    <p>{{ decode(guest.text).length<255?decode(guest.text):decode(guest.text).slice(0,255)+'...' }}</p>
                                 </div>
                             </div>
-                            <div class="actions"><span @click="console.log(guest.id)" class="edit">V</span><span @click="console.log(guest.id)" class="delete">X</span></div>
+                            <div class="actions">
+                                <span @click="console.log(guest.id)" class="edit">V</span>
+                                <span @click="console.log('ban :'+guest.telephone)" class="delete">B</span>
+                                <span @click="console.log(guest.id)" class="delete">X</span>
+                            </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <h3  @click="toggleBanned_users">Numéros bannis</h3>
+            <div ref="banned_usersContent" 
+                class="menu-content" 
+                :style="{ maxHeight: banned_usersOpen ? banned_usersHeight : '0px' }">
+                <div class="loading">
+                    <LoadingSpinner v-if="isLoading"/>
+                    <p v-if="!isLoading && banned_users.length<1">Aucune signature</p>
+                </div>
+                <div class="card-content" v-if="!isLoading && banned_users.length">
+                    <div class="entry-wrapper" v-for="user in banned_users" :key="user.id">
+                        <div class="card-entries">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>{{ decode(user.telephone) }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <span @click="console.log(user.id)" class="delete">X</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-entries" @click="console.log('add')">
+                        <p>+</p>
                     </div>
                 </div>
             </div>
@@ -389,10 +527,16 @@ import hourisation from '@/modules/hourisation';
 import durationBetween from '@/modules/durationBetween';
 import monisation from '@/modules/monisation';
 import addMinutes from '@/modules/addMinutes';
+import InfoModal from '@/components/InfoModal.vue';
 
+const modalOpen = ref(false);
+const modalTitle = ref("");
+const modalText = ref("");
 const token = ref<string>(localStorage.getItem('token')||'');
 const users = ref();
+const miscellaneous_texts = ref();
 const appointments = ref();
+const banned_users = ref();
 const cares = ref();
 const events = ref();
 const guestbook = ref();
@@ -421,17 +565,23 @@ const editedUser = ref({
     password_confirm: ''
 });
 const usersContent = ref(null);
+const miscellaneous_textsContent = ref(null);
 const appointmentsContent = ref(null);
+const banned_usersContent = ref(null);
 const caresContent = ref(null);
 const eventsContent = ref(null);
 const guestbookContent = ref(null);
 const usersOpen = ref(false);
+const miscellaneous_textsOpen = ref(false);
 const appointmentsOpen = ref(false);
+const banned_usersOpen = ref(false);
 const caresOpen = ref(false);
 const eventsOpen = ref(false);
 const guestbookOpen = ref(false);
 const usersHeight = ref("0px");
+const miscellaneous_textsHeight = ref("0px");
 const appointmentsHeight = ref("0px");
+const banned_usersHeight = ref("0px");
 const caresHeight = ref("0px");
 const eventsHeight = ref("0px");
 const guestbookHeight = ref("0px");
@@ -450,11 +600,27 @@ const toggleUsers = async () => {
     : "0px";
 };
 
+const toggleMiscellaneous_texts = async () => {
+    miscellaneous_textsOpen.value = !miscellaneous_textsOpen.value;
+    await nextTick();
+    miscellaneous_textsHeight.value = miscellaneous_textsOpen.value 
+    ? miscellaneous_textsContent.value.scrollHeight + "px"
+    : "0px";
+};
+
 const toggleAppointments = async () => {
     appointmentsOpen.value = !appointmentsOpen.value;
     await nextTick();
     appointmentsHeight.value = appointmentsOpen.value 
     ? appointmentsContent.value.scrollHeight + "px"
+    : "0px";
+};
+
+const toggleBanned_users = async () => {
+    banned_usersOpen.value = !banned_usersOpen.value;
+    await nextTick();
+    banned_usersHeight.value = banned_usersOpen.value 
+    ? banned_usersContent.value.scrollHeight + "px"
     : "0px";
 };
 
@@ -529,6 +695,9 @@ const updateUser = async () => {
         });
         if(res.status!==200){
             userEdit(editingUser.value, editedUser.value);
+            modalTitle.value = "Échec"
+            modalText.value = "La modification de l'administrateur n'a pas pu avoir lieu."
+            modalOpen.value = true;
             editingUser.value = undefined;
             return;
         }
@@ -540,11 +709,17 @@ const updateUser = async () => {
                     ...updatingUser,
                 };
             }
+            modalTitle.value = "Succès"
+            modalText.value = "L'administrateur a été modifié."
+            modalOpen.value = true;
             editingUser.value = undefined;
             return;
         }
     } catch(err) {
         console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "La modification de l'administrateur n'a pas pu avoir lieu."
+        modalOpen.value = true;
     }
     editingUser.value = undefined;
 }
@@ -570,6 +745,9 @@ const updateAppointment = async () => {
         });
         if(res.status!==200){
             appointmentEdit(editingAppointment.value, editedAppointment.value);
+            modalTitle.value = "Échec"
+            modalText.value = "La modification du rendez-vous n'a pas pu avoir lieu."
+            modalOpen.value = true;
             editingAppointment.value = undefined;
             return;
         }
@@ -581,13 +759,18 @@ const updateAppointment = async () => {
                     ...updatingAppointment,
                 };
             }
+            modalTitle.value = "Succès"
+            modalText.value = "Le rendez-vous a été modifié."
+            modalOpen.value = true;
             editingAppointment.value = undefined;
             return;
         }
     } catch(err) {
         console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "La modification du rendez-vous n'a pas pu avoir lieu."
+        modalOpen.value = true;
     }
-    // TODO feedback de validation
 }
 
 onMounted(async () => {
@@ -595,8 +778,14 @@ onMounted(async () => {
     if (usersOpen.value) {
         usersHeight.value = usersContent.value.scrollHeight + "px";
     }
+    if (miscellaneous_textsOpen.value) {
+        miscellaneous_textsHeight.value = miscellaneous_textsContent.value.scrollHeight + "px";
+    }
     if (appointmentsOpen.value) {
         appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+    }
+    if (banned_usersOpen.value) {
+        banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
     }
     if (caresOpen.value) {
         caresHeight.value = caresContent.value.scrollHeight + "px";
@@ -611,15 +800,26 @@ onMounted(async () => {
     try {
         await nextTick();
         if (usersContent.value) resizeObserver.observe(usersContent.value);
+        if (miscellaneous_textsContent.value) resizeObserver.observe(miscellaneous_textsContent.value);
         if (appointmentsContent.value) resizeObserver.observe(appointmentsContent.value);
+        if (banned_usersContent.value) resizeObserver.observe(banned_usersContent.value);
+        if (caresContent.value) resizeObserver.observe(caresContent.value);
+        if (eventsContent.value) resizeObserver.observe(eventsContent.value);
+        if (guestbookContent.value) resizeObserver.observe(guestbookContent.value);
 
         const tokenHeader = { Authorization: `bearer ${token.value}` };
         const responses = await Promise.all([
             fetch('http://localhost:3000/api/users/', {
                 headers: { 'Content-Type': 'application/json', ...tokenHeader },
             }),
+            fetch('http://localhost:3000/api/miscellaneous_texts/', {
+                headers: { 'Content-Type': 'application/json' },
+            }),
             fetch('http://localhost:3000/api/appointments/', {
                 headers: { 'Content-Type': 'application/json' },
+            }),
+            fetch('http://localhost:3000/api/banned_users/', {
+                headers: { 'Content-Type': 'application/json', ...tokenHeader },
             }),
             fetch('http://localhost:3000/api/cares/', {
                 headers: { 'Content-Type': 'application/json' },
@@ -637,7 +837,7 @@ onMounted(async () => {
             return res.json();
         }));
 
-        [users.value, appointments.value, cares.value, events.value, guestbook.value] = jsonResponses;
+        [users.value, miscellaneous_texts.value, appointments.value, banned_users.value, cares.value, events.value, guestbook.value] = jsonResponses;
     } catch (err) {
         console.error(err);
         loadingError.value = 'Erreur de connexion au serveur';
@@ -648,7 +848,9 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   resizeObserver.unobserve(usersContent.value);
+  resizeObserver.unobserve(miscellaneous_textsContent.value);
   resizeObserver.unobserve(appointmentsContent.value);
+  resizeObserver.unobserve(banned_usersContent.value);
   resizeObserver.unobserve(caresContent.value);
   resizeObserver.unobserve(eventsContent.value);
   resizeObserver.unobserve(guestbookContent.value);
@@ -658,7 +860,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .wrapper {
-    margin: 2rem auto;
+    margin: 0 auto;
+    padding-top: 2rem;
     min-height: 100vh;
     width: 100%;
     gap: 1rem;
