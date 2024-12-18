@@ -22,7 +22,7 @@ router.get('/', (req, res) => {
     // DÉSACTIVÉ POUR LE TEST
     // authorizationJWT
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     const sql = 'SELECT * FROM banned_users';
     db.query(sql, (err, results) => {
@@ -37,7 +37,7 @@ router.post('/create', async (req, res) => {
     // DÉSACTIVÉ POUR LE TEST
     // authorizationJWT
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     if(!telephoneValidate(req.body, telephoneSchema)){
         console.log(telephoneValidate.errors);
@@ -69,15 +69,10 @@ router.post('/create', async (req, res) => {
     });
 });
 
-router.delete('/delete/:id', authorizationJWT, async (req, res) => {
-    // DÉSACTIVÉ POUR LE TEST
-    // authorizationJWT
+router.delete('/delete/:id', async (req, res) => {
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
-    if(req.session.user!=="admin"){
-        return res.status(401).json({ error: 'Forbidden.' });
-    }
     const { id } = req.params;
     const sql = 'DELETE FROM banned_users WHERE id = ?'
     db.query(sql, [id], (err, results) => {
