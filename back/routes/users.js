@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
     // DÉSACTIVÉ POUR LE TEST
     // authorizationJWT
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     const sql = 'SELECT * FROM users';
     db.query(sql, (err, results) => {
@@ -40,7 +40,7 @@ router.post('/create', async (req, res) => {
     // DÉSACTIVÉ POUR LE TEST
     // authorizationJWT
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     if(!emailPassValidate(req.body, emailPassSchema)){
         console.log(emailPassValidate.errors);
@@ -123,7 +123,7 @@ router.put('/update/:id', async (req, res) => {
     // DÉSACTIVÉ POUR LE TEST
     // authorizationJWT
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     if(!emailPassValidate(req.body, emailPassSchema)){
         console.log(emailPassValidate.errors);

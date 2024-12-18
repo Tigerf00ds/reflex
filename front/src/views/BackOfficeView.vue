@@ -115,10 +115,11 @@
                                     <p>Téléphone : <a :href="'tel:'+decode(appointment.telephone)">{{ decode(appointment.telephone)}}</a> <span>{{ banned_users.find(user => user.telephone === appointment.telephone)?"Numéro banni":"" }}</span></p>
                                 </div>
                                 <div>
-                                    <p>Soin : {{ decode(cares.find(care => care.id === appointment.care_id)?.name || 'Horaire bloqué')  }}</p>
+                                    <p>Soin : {{ decode(cares.find(care => care.id === appointment.care_id)?.name || 'Horaire bloquée')  }}</p>
                                     <p>Lieu : {{ decode(appointment.address) }}</p>
                                     <p>Durée : {{ durationBetween(appointment.time_start, appointment.time_end) }} minutes</p>
-                                    <p>Tarif : {{ monisation(appointment.price) }}</p>
+                                    <p v-if="appointment.time_start===0">Tarif : {{ monisation(cares.find(care => care.id === appointment.care_id)?.day_price || 0) }}</p>
+                                    <p v-else>Tarif : {{ monisation(Math.floor(((cares.find(care => care.id === appointment.care_id)?.price || 0)/60*durationBetween(appointment.time_start, appointment.time_end))+(appointment.address==='salon'?0:(cares.find(care => care.id === appointment.care_id)?.travel_expenses || 0)))) }}</p>
                                 </div>
                             </div>
                             <div class="actions"><span @click="appointmentEdit(index, appointment)" class="edit">E</span><span @click="console.log(appointment.id)" class="delete">X</span></div>
@@ -155,18 +156,20 @@
                                         </p>
                                         <span
                                             class="button"
-                                            @click.prevent="{editedAppointment.time_start=0;editedAppointment.duration=24*60;editedAppointment.address='salon';}"
+                                            @click.prevent="{editedAppointment.time_start=0;editedAppointment.duration=24*60;}"
                                             v-if="
-                                                (new Date().getFullYear()<parseInt(editedAppointment.year_booked) ||
-                                                (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
-                                                new Date().getMonth()+2<parseInt(editedAppointment.month_booked)) ||
-                                                (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
-                                                new Date().getMonth()+2===parseInt(editedAppointment.month_booked) &&
-                                                new Date().getDate()<parseInt(editedAppointment.day_booked))) &&
-                                                (cares.find(care => care.id === editedAppointment.care_id)?.is_home ||
+                                                // logique pour empêcher une date avant un moisà garder pour le côté user
+                                                //
+                                                // (new Date().getFullYear()<parseInt(editedAppointment.year_booked) ||
+                                                // (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
+                                                // new Date().getMonth()+2<parseInt(editedAppointment.month_booked)) ||
+                                                // (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
+                                                // new Date().getMonth()+2===parseInt(editedAppointment.month_booked) &&
+                                                // new Date().getDate()<parseInt(editedAppointment.day_booked))) &&
+                                                cares.find(care => care.id === editedAppointment.care_id)?.is_home ||
                                                 cares.find(care => care.id === editedAppointment.care_id)?.is_structure ||
                                                 cares.find(care => care.id === editedAppointment.care_id)?.is_company ||
-                                                editedAppointment.care_id == 0)">
+                                                editedAppointment.care_id == 0">
                                                 Toute la journée
                                             </span>
                                     </div>
@@ -229,7 +232,7 @@
                                                 >
                                                 Horaire déjà prise
                                             </span>
-                                            <span v-if="editedAppointment.address!=='salon'">
+                                            <span v-if="editedAppointment.address!=='salon' && editedAppointment.time_start!==0">
                                                 Départ : {{ hourisation(addMinutes((editedAppointment.time_start-100),30)) }} Retour : {{ hourisation(addMinutes(addMinutes(editedAppointment.time_start,editedAppointment.duration),30)) }}
                                             </span>
                                         </p>
@@ -274,7 +277,7 @@
                                                     }"
                                                 :name="'care'+appointment.id"
                                                 :id="'care'+appointment.id">
-                                                <option value="0">Bloquage d'horaire</option>
+                                                <option value="0">Blocage d'horaire</option>
                                                 <option v-for="care in cares" :value="care.id" :key="care.id">{{ decode(care.name) }}</option>
                                             </select>
                                         </label>
@@ -287,11 +290,8 @@
                                         <span style="color: #aa3333" v-if="!editedAppointment.address">Requis</span>
                                         <span style="color: #aa3333" v-if="editedAppointment.address && !editedAppointment.address.match(addressRegex)">Invalide</span>
                                     </p>
-                                    <p>
-                                        <label  :for="'price'+appointment.id">
-                                            Tarif : {{ monisation(Math.floor(((cares.find(care => care.id === editedAppointment.care_id)?.price || 0)/60*editedAppointment.duration)+(editedAppointment.address==='salon'?0:(cares.find(care => care.id === editedAppointment.care_id)?.travel_expenses || 0)))) }}
-                                        </label>
-                                    </p>
+                                    <p v-if="editedAppointment.time_start===0">Tarif : {{ monisation(cares.find(care => care.id === editedAppointment.care_id)?.day_price || 0) }}</p>
+                                    <p v-else>Tarif : {{ monisation(Math.floor(((cares.find(care => care.id === editedAppointment.care_id)?.price || 0)/60*editedAppointment.duration)+(editedAppointment.address==='salon'?0:(cares.find(care => care.id === editedAppointment.care_id)?.travel_expenses || 0)))) }}</p>
                                 </div>
                             </div>
                             <div class="actions">
@@ -370,11 +370,12 @@
                                 <div>
                                     <div>
                                         <p>Durée : {{ care.min_duration }} minutes à {{ care.max_duration }} minutes</p>
-                                        <p>Déplacement : {{ !care.is_home&&!care.is_structure&&!care.is_company?'Non':'Oui' }} {{ care.is_home||care.is_structure||care.is_company?'Frais de déplacement : '+monisation(care.travel_expenses):'' }}</p>
+                                        <p>Déplacement : {{ !care.is_home&&!care.is_structure&&!care.is_company?'Non':'Oui' }}</p>
                                     </div>
                                     <div>
                                         <p>Prix : {{ monisation(care.price) }} /h</p>
-                                        <p>TVA : {{ care.tax/100 }}%</p>
+                                        <p v-if="care.is_home||care.is_structure||care.is_company">Frais de déplacement : {{ monisation(care.travel_expenses) }}</p>
+                                        <p v-if="care.is_whole_day">Prix à la journée : {{ monisation(care.day_price) }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -428,8 +429,8 @@
                     <p v-if="!isLoading && miscellaneous_texts.length<1">Aucune signature</p>
                 </div>
                 <div class="card-content" v-if="!isLoading && miscellaneous_texts.length">
-                    <div class="entry-wrapper" v-for="misc in miscellaneous_texts" :key="misc.id">
-                        <div class="card-entries">
+                    <div class="entry-wrapper" v-for="(misc, index) in miscellaneous_texts" :key="misc.id">
+                        <div :class="{invisible: index===editingMiscellaneous_text}" class="card-entries">
                             <div>
                                 <div>
                                     <div>
@@ -441,9 +442,29 @@
                                 </div>
                             </div>
                             <div class="actions">
-                                <span @click="console.log(misc.id)" class="edit">E</span>
+                                <span v-if="misc.id===1" @click="miscellaneous_textEdit(index, misc)" class="edit">E</span>
+                                <span v-else @click="console.log(`routerlink to ${misc.id}`)" class="edit">E</span>
                             </div>
                         </div>
+                        <form :class="{invisible: index!==editingMiscellaneous_text}" class="card-entries">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>{{ miscellaneous_texts[0]===misc?"Phrase d'accroche":"Texte de la page d'info" }}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <textarea v-model="editedMiscellaneous_text.text" :name="'misc'+misc.id" :id="'misc'+misc.id" cols="45" rows="10"></textarea>
+                                    <span style="color: #aa3333" v-if="!editedMiscellaneous_text.text" >Requis</span>
+                                    <span style="color: #aa3333" v-if="editedMiscellaneous_text.text && !editedMiscellaneous_text.text.match(descriptionRegex)" >Invalide</span>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <span v-if="!editedMiscellaneous_text.text || !editedMiscellaneous_text.text.match(descriptionRegex)" >E</span>
+                                <span v-else @click="updateMiscellaneous_text" class="edit">E</span>
+                                <span @click="editingMiscellaneous_text=null" class="delete">X</span>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -501,17 +522,38 @@
                             <div>
                                 <div>
                                     <div>
-                                        <p>{{ decode(user.telephone) }}</p>
+                                        <p>Téléphone : {{ decode(user.telephone) }}</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="actions">
-                                <span @click="console.log(user.id)" class="delete">X</span>
+                                <span @click="deleteBanned_user(user.id)" class="delete">X</span>
                             </div>
                         </div>
                     </div>
-                    <div class="card-entries" @click="console.log('add')">
-                        <p>+</p>
+                    <div class="card-entries">
+                        <p :class="{invisible:creatingBanned_user}" @click="banned_userCreate">+</p>
+                        <form :class="{invisible:!creatingBanned_user}">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>
+                                            <label name="newBanned_user" for="newBanned_user">
+                                                Téléphone :
+                                                <input v-model="createdBanned_user.telephone" type="tel" name="newBanned_user" id="newBanned_user">
+                                            </label>
+                                            <span v-if="!createdBanned_user.telephone" style="color: #aa3333">Requis</span>
+                                            <span v-if="createdBanned_user.telephone && !createdBanned_user.telephone.match(telRegex)" style="color: #aa3333">Invalide</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <span v-if="!createdBanned_user.telephone || !createdBanned_user.telephone.match(telRegex)">O</span>
+                                <span v-else @click="createBanned_user" class="edit">O</span>
+                                <span @click="creatingBanned_user=false" class="delete">X</span>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -542,8 +584,23 @@ const events = ref();
 const guestbook = ref();
 const isLoading = ref<boolean>(true);
 const loadingError = ref<string>('');
-const editingAppointment = ref<number>();
+const creatingBanned_user = ref<boolean>(false);
 const editingUser = ref<number>();
+const editingMiscellaneous_text = ref<number>();
+const editingAppointment = ref<number>();
+const editedUser = ref({
+    id: 0,
+    email: '',
+    password: '',
+    password_confirm: ''
+});
+const editedMiscellaneous_text = ref({
+    id: 0,
+    text: '',
+    filespaths: '',
+    filesnames: '',
+    filesdescriptions: ''
+});
 const editedAppointment = ref({
     id: 0,
     care_id: 0,
@@ -558,11 +615,8 @@ const editedAppointment = ref({
     day_booked: '',
     duration: 0
 });
-const editedUser = ref({
-    id: 0,
-    email: '',
-    password: '',
-    password_confirm: ''
+const createdBanned_user = ref({
+    telephone: ''
 });
 const usersContent = ref(null);
 const miscellaneous_textsContent = ref(null);
@@ -588,6 +642,7 @@ const guestbookHeight = ref("0px");
 let resizeObserver;
 
 const wordRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']{1,255}$/;
+const descriptionRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ,.:!?$€£¥)(\s\-']{1,255}$/;
 const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
 const telRegex = /^[0-9]{10,13}$/;
 const addressRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\-']{1,255}$/;
@@ -648,19 +703,44 @@ const toggleGuestbook = async () => {
     : "0px";
 };
 
-const appointmentEdit = async (index :number, appointment) :void => {
-    editingAppointment.value = index;
-    editedAppointment.value = transformAppointment(appointment);
-    await nextTick();
-    usersHeight.value = appointmentsContent.value.scrollHeight + "px";
-}
-
 const userEdit = async (index :number, user) :void => {
     editingUser.value = index;
     editedUser.value = transformUser(user);
     await nextTick();
     usersHeight.value = usersContent.value.scrollHeight + "px";
 }
+
+const miscellaneous_textEdit = async (index :number, miscellaneous_text) :void => {
+    editingMiscellaneous_text.value = index;
+    editedMiscellaneous_text.value = transformMiscellaneous_text(miscellaneous_text);
+    await nextTick();
+    miscellaneous_textsHeight.value = miscellaneous_textsContent.value.scrollHeight + "px";
+}
+
+const appointmentEdit = async (index :number, appointment) :void => {
+    editingAppointment.value = index;
+    editedAppointment.value = transformAppointment(appointment);
+    await nextTick();
+    appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+}
+
+const banned_userCreate = async (index :number, user) :void => {
+    creatingBanned_user.value = true;
+    await nextTick();
+    banned_usersHeight.value = appointmentsContent.value.scrollHeight + "px";
+}
+
+const transformUser = (user) => ({
+    ...user,
+    email: decode(user.email),
+    password: '',
+    password_confirm: '',
+});
+
+const transformMiscellaneous_text = (miscellaneous_text) => ({
+    ...miscellaneous_text,
+    text: decode(miscellaneous_text.text),
+});
 
 const transformAppointment = (appointment) => ({
     ...appointment,
@@ -674,12 +754,51 @@ const transformAppointment = (appointment) => ({
     duration: durationBetween(appointment.time_start, appointment.time_end),
 });
 
-const transformUser = (user) => ({
-    ...user,
-    email: decode(user.email),
-    password: '',
-    password_confirm: '',
+const resetBanned_user = (user) => ({
+    telephone: '',
 });
+
+const createBanned_user = async () => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/banned_users/create`, {
+          method: "post",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`},
+          body: JSON.stringify(createdBanned_user.value)
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "Le blocage de numéro n'a pas pu avoir lieu."
+            modalOpen.value = true;
+            creatingBanned_user.value = false;
+            resetBanned_user(createdBanned_user);
+            await nextTick();
+            banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            banned_users.value.push(createdBanned_user.value);
+            modalTitle.value = "Succès"
+            modalText.value = "Le numéro a été bloqué."
+            modalOpen.value = true;
+            creatingBanned_user.value = false;
+            resetBanned_user(createdBanned_user);
+            await nextTick();
+            banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "Le blocage de numéro n'a pas pu avoir lieu."
+        modalOpen.value = true;
+        resetBanned_user(createdBanned_user);
+        await nextTick();
+        banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+        return;
+    }
+    creatingBanned_user.value = false;
+    resetBanned_user(createdBanned_user);
+}
 
 const updateUser = async () => {
     const id = editedUser.value.id;
@@ -702,7 +821,7 @@ const updateUser = async () => {
             return;
         }
         else{
-            const updatedIndex = users.value.findIndex((app) => app.id === id);
+            const updatedIndex = users.value.findIndex((user) => user.id === id);
             if (updatedIndex !== -1) {
                 users.value[updatedIndex] = {
                     ...users.value[updatedIndex],
@@ -720,8 +839,53 @@ const updateUser = async () => {
         modalTitle.value = "Échec"
         modalText.value = "La modification de l'administrateur n'a pas pu avoir lieu."
         modalOpen.value = true;
+        return;
     }
     editingUser.value = undefined;
+}
+
+const updateMiscellaneous_text = async () => {
+    const id = editedMiscellaneous_text.value.id;
+    const updatingMiscellaneous_text = {
+        text : editedMiscellaneous_text.value.text,
+        filesdescriptions : []
+    }
+    try {
+        const res = await fetch(`http://localhost:3000/api/miscellaneous_texts/update/${id}`, {
+          method: "put",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`},
+          body: JSON.stringify(updatingMiscellaneous_text)
+        });
+        if(res.status!==200){
+            miscellaneous_textEdit(editingMiscellaneous_text.value, editedMiscellaneous_text.value);
+            modalTitle.value = "Échec"
+            modalText.value = "La modification de la phrase d'accroche n'a pas pu avoir lieu."
+            modalOpen.value = true;
+            editingMiscellaneous_text.value = undefined;
+            return;
+        }
+        else{
+            const updatedIndex = miscellaneous_texts.value.findIndex((misc) => misc.id === id);
+            if (updatedIndex !== -1) {
+                miscellaneous_texts.value[updatedIndex] = {
+                    ...miscellaneous_texts.value[updatedIndex],
+                    ...updatingMiscellaneous_text,
+                };
+            }
+            modalTitle.value = "Succès"
+            modalText.value = "La phrase d'accroche a été modifiéé."
+            modalOpen.value = true;
+            editingMiscellaneous_text.value = undefined;
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "La modification de la phrase d'accroche n'a pas pu avoir lieu."
+        modalOpen.value = true;
+        return;
+    }
+    editingMiscellaneous_text.value = undefined;
 }
 
 const updateAppointment = async () => {
@@ -752,7 +916,7 @@ const updateAppointment = async () => {
             return;
         }
         else{
-            const updatedIndex = appointments.value.findIndex((app) => app.id === id);
+            const updatedIndex = appointments.value.findIndex((appointment) => appointment.id === id);
             if (updatedIndex !== -1) {
                 appointments.value[updatedIndex] = {
                     ...appointments.value[updatedIndex],
@@ -770,6 +934,42 @@ const updateAppointment = async () => {
         modalTitle.value = "Échec"
         modalText.value = "La modification du rendez-vous n'a pas pu avoir lieu."
         modalOpen.value = true;
+        return;
+    }
+}
+
+const deleteBanned_user = async (id) => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/banned_users/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "Le numéro n'a pas pu été authorisé."
+            modalOpen.value = true;
+            await nextTick();
+            banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = banned_users.value.findIndex((user) => user.id === id);
+            banned_users.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "Le numéro a été authorisé."
+            modalOpen.value = true;
+            await nextTick();
+            banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "Le numéro n'a pas pu été authorisé."
+        modalOpen.value = true;
+        await nextTick();
+        banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+        return;
     }
 }
 
@@ -841,6 +1041,7 @@ onMounted(async () => {
     } catch (err) {
         console.error(err);
         loadingError.value = 'Erreur de connexion au serveur';
+        return;
     } finally {
         isLoading.value = false;
     }

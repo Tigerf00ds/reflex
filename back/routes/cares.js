@@ -53,7 +53,7 @@ const caresSchema = {
         min_duration: {type: "integer"},
         max_duration: {type: "integer"},
         price: {type: "integer"},
-        tax: {type: "integer"},
+        day_price: {type: "integer"},
         travel_expenses: {type: "integer"},
         is_whole_day: {type: "boolean"},
         is_home: {type: "boolean"},
@@ -65,7 +65,7 @@ const caresSchema = {
         items: { type: "string" }
         }
     },
-    required: ["name", "short_description", "description", "min_duration", "max_duration", "price", "tax", "travel_expenses", "is_whole_day", "is_home", "is_salon", "is_company", "is_structure", "filesdescriptions"],
+    required: ["name", "short_description", "description", "min_duration", "max_duration", "price", "day_price", "travel_expenses", "is_whole_day", "is_home", "is_salon", "is_company", "is_structure", "filesdescriptions"],
     additionalProperties: false
 }
 const caresValidate = ajv.compile(caresSchema);
@@ -93,13 +93,13 @@ router.get('/:slug', (req, res) => {
 
 router.post('/create', upload.array('images', 12), async (req, res) => {
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Forbidden.' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     if(!caresValidate(req.body, caresSchema)){
         console.log(caresValidate.errors);
         return res.status(400).json({ error: 'Erreur type', details: caresValidate.errors });
     }
-    const { name, short_description, description, min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, filesdescriptions } = req.body;
+    const { name, short_description, description, min_duration, max_duration, price, day_price, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, filesdescriptions } = req.body;
     if(!name || !name.match(wordRegex)){
         console.error('Nom invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Nom invalide.' });
@@ -124,7 +124,7 @@ router.post('/create', upload.array('images', 12), async (req, res) => {
         console.error('Prix invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Prix invalide.' });
     }
-    if(!tax || isNaN(tax)){
+    if(isNaN(day_price)){
         console.error('TVA invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'TVA invalide.' });
     }
@@ -151,8 +151,8 @@ router.post('/create', upload.array('images', 12), async (req, res) => {
         console.error('Nom déjà pris.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Nom déjà pris.' });
         }
-        const sql2 = 'INSERT INTO cares (name, slug, short_description, description, min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, filesnames, filespaths, filesdescriptions) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
-        db.query(sql2, [he.encode(name), slug, he.encode(short_description), he.encode(description), min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions)], (err, results) => {
+        const sql2 = 'INSERT INTO cares (name, slug, short_description, description, min_duration, max_duration, price, day_price, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, filesnames, filespaths, filesdescriptions) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        db.query(sql2, [he.encode(name), slug, he.encode(short_description), he.encode(description), min_duration, max_duration, price, day_price, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions)], (err, results) => {
             if (err) {
                 console.error('Erreur SQL :', err);
                 return res.status(500).json({ error: 'Erreur serveur', details: err });
@@ -164,13 +164,13 @@ router.post('/create', upload.array('images', 12), async (req, res) => {
 
 router.put('/update/:id', upload.array('images', 12), async (req, res) => {
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Forbidden.' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     if(!caresValidate(req.body, caresSchema)){
         console.log(caresValidate.errors);
         return res.status(400).json({ error: 'Erreur type', details: caresValidate.errors });
     }
-    const { name, short_description, description, min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, filesdescriptions } = req.body;
+    const { name, short_description, description, min_duration, max_duration, price, day_price, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, filesdescriptions } = req.body;
     const { id } = req.params;
     if(!name || !name.match(wordRegex)){
         console.error('Nom invalide.');
@@ -196,7 +196,7 @@ router.put('/update/:id', upload.array('images', 12), async (req, res) => {
         console.error('Prix invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Prix invalide.' });
     }
-    if(!tax || isNaN(tax)){
+    if(isNaN(day_price)){
         console.error('TVA invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'TVA invalide.' });
     }
@@ -223,8 +223,8 @@ router.put('/update/:id', upload.array('images', 12), async (req, res) => {
         console.error('Nom déjà pris.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Nom déjà pris.' });
         }
-        const sql2 = 'UPDATE cares SET name = ?, slug = ?, short_description = ?, description = ?, min_duration = ?, max_duration = ?, price = ?, tax = ?, travel_expenses = ?, is_whole_day = ?, is_home = ?, is_salon = ?, is_company = ?, is_structure = ?, filesnames = ?, filespaths = ?, filesdescriptions = ? WHERE id = ?';
-        db.query(sql2, [he.encode(name), slug, he.encode(short_description), he.encode(description), min_duration, max_duration, price, tax, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions), id], (err, results) => {
+        const sql2 = 'UPDATE cares SET name = ?, slug = ?, short_description = ?, description = ?, min_duration = ?, max_duration = ?, price = ?, day_price = ?, travel_expenses = ?, is_whole_day = ?, is_home = ?, is_salon = ?, is_company = ?, is_structure = ?, filesnames = ?, filespaths = ?, filesdescriptions = ? WHERE id = ?';
+        db.query(sql2, [he.encode(name), slug, he.encode(short_description), he.encode(description), min_duration, max_duration, price, day_price, travel_expenses, is_whole_day, is_home, is_salon, is_company, is_structure, JSON.stringify(filesnames), JSON.stringify(filespaths), JSON.stringify(filesdescriptions), id], (err, results) => {
             if (err) {
                 console.error('Erreur SQL :', err);
                 return res.status(500).json({ error: 'Erreur serveur', details: err });
@@ -236,7 +236,7 @@ router.put('/update/:id', upload.array('images', 12), async (req, res) => {
 
 router.delete('/delete/:id', authorizationJWT, async (req, res) => {
     if(req.session.user!=="admin"){
-        return res.status(401).json({ error: 'Forbidden.' });
+        return res.status(401).json({ error: 'Interdit.' });
     }
     const { id } = req.params;
     const sql = 'DELETE FROM cares WHERE id = ?'

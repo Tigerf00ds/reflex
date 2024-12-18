@@ -45,7 +45,7 @@ router.post('/create', async (req, res) => {
     // DÉSACTIVÉ POUR LE TEST
     // authorizationJWT
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     if(!appointmentsValidate(req.body, appointmentsSchema)){
         console.log(appointmentsValidate.errors);
@@ -55,7 +55,6 @@ router.post('/create', async (req, res) => {
     const dateToday = new Date();
     const yearToday = dateToday.getFullYear();
     const monthToday = dateToday.getMonth()+1;
-    const nextMonth = monthToday===12?1:monthToday+1;
     const dayToday = dateToday.getDate();
     if(isNaN(care_id)){
         console.error('Soin invalide.');
@@ -100,6 +99,7 @@ router.post('/create', async (req, res) => {
         }
         if(results.length>0)price += results[0].price / 60 * duration;
         if(results.length>0 && address!=='salon')price += results[0].travel_expenses;
+        if(time_start===0)price = results[0].day_price;
     });
     const dateArray = date_booked.split('-');
     if(yearToday > parseInt(dateArray[0])){
@@ -113,14 +113,6 @@ router.post('/create', async (req, res) => {
     if(yearToday === parseInt(dateArray[0]) && monthToday === parseInt(dateArray[1]) && dayToday >= parseInt(dateArray[2])){
         console.error('Jour invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Jour invalide.' });
-    }
-    if(time_start === 0 && time_end === 2400 && yearToday === parseInt(dateArray[0]) && monthToday === parseInt(dateArray[1])){
-        console.error('Date invalide pour un jour complet.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide pour un jour complet.' });
-    }
-    if(time_start === 0 && time_end === 2400 && yearToday === parseInt(dateArray[0]) && nextMonth === parseInt(dateArray[1]) && dayToday > parseInt(dateArray[2])){
-        console.error('Date invalide pour un jour complet.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide pour un jour complet.' });
     }
     const sql2 = 'SELECT * FROM appointments WHERE date_booked = ?';
     db.query(sql2, [he.encode(date_booked)], (err, results) => {
@@ -157,7 +149,7 @@ router.post('/take', async (req, res) => {
     const monthToday = dateToday.getMonth()+1;
     const nextMonth = monthToday===12?1:monthToday+1;
     const dayToday = dateToday.getDate();
-    if(isNaN(care_id)){
+    if(!care_id || isNaN(care_id)){
         console.error('Soin invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Soin invalide.' });
     }
@@ -200,6 +192,7 @@ router.post('/take', async (req, res) => {
         }
         if(results.length>0)price += results[0].price / 60 * duration;
         if(results.length>0 && address!=='salon')price += results[0].travel_expenses;
+        if(time_start===0)price = results[0].day_price;
     });
     const dateArray = date_booked.split('-');
     if(yearToday > parseInt(dateArray[0])){
@@ -261,7 +254,7 @@ router.put('/update/:id',  async (req, res) => {
     // DÉSACTIVÉ POUR LE TEST
     // authorizationJWT
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     if(!appointmentsValidate(req.body, appointmentsSchema)){
         console.log(appointmentsValidate.errors);
@@ -272,7 +265,6 @@ router.put('/update/:id',  async (req, res) => {
     const dateToday = new Date();
     const yearToday = dateToday.getFullYear();
     const monthToday = dateToday.getMonth()+1;
-    const nextMonth = monthToday===12?1:monthToday+1;
     const dayToday = dateToday.getDate();
     if(isNaN(care_id)){
         console.error('Soin invalide.');
@@ -317,6 +309,7 @@ router.put('/update/:id',  async (req, res) => {
         }
         if(results.length>0)price += results[0].price / 60 * duration;
         if(results.length>0 && address!=='salon')price += results[0].travel_expenses;
+        if(time_start===0)price = results[0].day_price;
     });
     const dateArray = date_booked.split('-');
     if(yearToday > parseInt(dateArray[0])){
@@ -330,14 +323,6 @@ router.put('/update/:id',  async (req, res) => {
     if(yearToday === parseInt(dateArray[0]) && monthToday === parseInt(dateArray[1]) && dayToday >= parseInt(dateArray[2])){
         console.error('Jour invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Jour invalide.' });
-    }
-    if(time_start === 0 && time_end === 2400 && yearToday === parseInt(dateArray[0]) && monthToday === parseInt(dateArray[1])){
-        console.error('Date invalide pour un jour complet.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide pour un jour complet.' });
-    }
-    if(time_start === 0 && time_end === 2400 && yearToday === parseInt(dateArray[0]) && nextMonth === parseInt(dateArray[1]) && dayToday > parseInt(dateArray[2])){
-        console.error('Date invalide pour un jour complet.');
-        return res.status(400).json({ error: 'Erreur requête', details: 'Date invalide pour un jour complet.' });
     }
     const sql2 = 'SELECT * FROM appointments WHERE date_booked = ? AND id != ?';
     db.query(sql2, [he.encode(date_booked), id], (err, results) => {
@@ -364,16 +349,8 @@ router.put('/update/:id',  async (req, res) => {
 });
 
 router.delete('/delete/:id', authorizationJWT, async (req, res) => {
-    // DÉSACTIVÉ POUR LE TEST
-    // authorizationJWT
-    // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
-    // }
     if(req.session.user!=="admin"){
-        return res.status(401).json({ error: 'Interdit' });
-    }
-    if(req.session.user!=="admin"){
-        return res.status(401).json({ error: 'Forbidden.' });
+        return res.status(401).json({ error: 'Interdit.' });
     }
     const { id } = req.params;
     const sql = 'DELETE FROM appointments WHERE id = ?'
