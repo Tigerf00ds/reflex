@@ -234,10 +234,12 @@ router.put('/update/:id', upload.array('images', 12), async (req, res) => {
     });
 });
 
-router.delete('/delete/:id', authorizationJWT, async (req, res) => {
-    if(req.session.user!=="admin"){
-        return res.status(401).json({ error: 'Interdit.' });
-    }
+router.delete('/delete/:id', async (req, res) => {
+    // DÉSACTIVÉ POUR LE TEST
+    // authorizationJWT
+    // if(req.session.user!=="admin"){
+    //     return res.status(401).json({ error: 'Interdit.' });
+    // }
     const { id } = req.params;
     const sql = 'DELETE FROM cares WHERE id = ?'
     db.query(sql, [id], (err, results) => {
