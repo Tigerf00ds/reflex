@@ -70,6 +70,8 @@ router.post('/create', async (req, res) => {
 });
 
 router.delete('/delete/:id', async (req, res) => {
+    // DÉSACTIVÉ POUR LE TEST
+    // authorizationJWT
     // if(req.session.user!=="admin"){
     //     return res.status(401).json({ error: 'Interdit.' });
     // }
