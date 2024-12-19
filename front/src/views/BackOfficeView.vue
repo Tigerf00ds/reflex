@@ -21,7 +21,7 @@
                             <div>
                                 <p>{{ user.email }}</p>
                             </div>
-                            <div class="actions"><span @click="userEdit(index, user)" class="edit">E</span><span v-if="!user.id===1" @click="console.log(user.id)" class="delete">X</span></div>
+                            <div class="actions"><span @click="userEdit(index, user)" class="edit">E</span><span v-if="!user.id===1" @click="deleteUser(user.id)" class="delete">X</span></div>
                         </div>
                         <form :class="{invisible: index!==editingUser}" class="card-entries">
                             <div>
@@ -80,8 +80,8 @@
                             </div>
                         </form>
                     </div>
-                    <div class="card-entries" @click="console.log('add')">
-                        <p>+</p>
+                    <div class="card-entries">
+                        <p class="plus" :class="{invisible: creatingBanned_user}" @click="console.log('usersCreate')">+</p>
                     </div>
                 </div>
             </div>
@@ -112,7 +112,11 @@
                                 <div>
                                     <p>Patient/e : {{ decode(appointment.name) }}</p>
                                     <p>E-mail : <a :href="'mailto:'+decode(appointment.email)">{{ decode(appointment.email) }}</a></p>
-                                    <p>Téléphone : <a :href="'tel:'+decode(appointment.telephone)">{{ decode(appointment.telephone)}}</a> <span>{{ banned_users.find(user => user.telephone === appointment.telephone)?"Numéro banni":"" }}</span></p>
+                                    <p>
+                                        Téléphone : <a :href="'tel:'+decode(appointment.telephone)">{{ decode(appointment.telephone)}}</a>
+                                        <span v-if="banned_users.find(user => user.telephone === appointment.telephone)">Numéro banni</span>
+                                        <span v-else class="button" @click="{createdBanned_user.telephone=appointment.telephone;createBanned_user();}">Bannir</span>
+                                    </p>
                                 </div>
                                 <div>
                                     <p>Soin : {{ decode(cares.find(care => care.id === appointment.care_id)?.name || 'Horaire bloquée')  }}</p>
@@ -122,7 +126,7 @@
                                     <p v-else>Tarif : {{ monisation(Math.floor(((cares.find(care => care.id === appointment.care_id)?.price || 0)/60*durationBetween(appointment.time_start, appointment.time_end))+(appointment.address==='salon'?0:(cares.find(care => care.id === appointment.care_id)?.travel_expenses || 0)))) }}</p>
                                 </div>
                             </div>
-                            <div class="actions"><span @click="appointmentEdit(index, appointment)" class="edit">E</span><span @click="console.log(appointment.id)" class="delete">X</span></div>
+                            <div class="actions"><span @click="appointmentEdit(index, appointment)" class="edit">E</span><span @click="deleteAppointment(appointment.id)" class="delete">X</span></div>
                         </div>
                         <form :class="{invisible: index!==editingAppointment}" class="card-entries">
                             <div>
@@ -261,6 +265,7 @@
                                             <input v-model="editedAppointment.telephone" type="tel" :name="'telephone'+appointment.id" :id="'telephone'+appointment.id">
                                             <span style="color: #aa3333" v-if="!editedAppointment.telephone">Requis</span>
                                             <span style="color: #aa3333" v-if="editedAppointment.telephone && !editedAppointment.telephone.match(telRegex)">Invalide</span>
+                                            <span v-if="editedAppointment.telephone && editedAppointment.telephone.match(telRegex) && !banned_users.find(user => user.telephone === editedAppointment.telephone)" class="button" @click="{createdBanned_user.telephone=editedAppointment.telephone;createBanned_user();}">Bannir</span>
                                             <span v-if="banned_users.find(user => user.telephone === editedAppointment.telephone)">Numéro banni</span>
                                         </label>
                                     </p>
@@ -340,8 +345,8 @@
                             </div>
                         </form>
                     </div>
-                    <div class="card-entries" @click="console.log('add')">
-                        <p>+</p>
+                    <div class="card-entries">
+                        <p class="plus" :class="{invisible: creatingBanned_user}" @click="console.log('appointmentCreate')">+</p>
                     </div>
                 </div>
             </div>
@@ -379,11 +384,11 @@
                                     </div>
                                 </div>
                             </div>
-                        <div class="actions"><span @click="console.log(care.id)" class="edit">E</span><span @click="console.log(care.id)" class="delete">X</span></div>
+                        <div class="actions"><span @click="console.log('linkto edit care.id')" class="edit">E</span><span @click="deleteCare(care.id)" class="delete">X</span></div>
                         </div>
                     </div>
-                    <div class="card-entries" @click="console.log('add')">
-                        <p>+</p>
+                    <div class="card-entries">
+                        <p class="plus" :class="{invisible: creatingBanned_user}" @click="console.log('linkto care create')">+</p>
                     </div>
                 </div>
             </div>
@@ -410,11 +415,11 @@
                                     <p>{{ event.short_text }}</p>
                                 </div>
                             </div>
-                            <div class="actions"><span @click="console.log(event.id)" class="edit">E</span><span @click="console.log(event.id)" class="delete">X</span></div>
+                            <div class="actions"><span @click="console.log('linkto edit event.id')" class="edit">E</span><span @click="deleteEvent(event.id)" class="delete">X</span></div>
                         </div>
                     </div>
-                    <div class="card-entries" @click="console.log('add')">
-                        <p>+</p>
+                    <div class="card-entries">
+                        <p class="plus" :class="{invisible: creatingBanned_user}" @click="console.log('linkto event create')">+</p>
                     </div>
                 </div>
             </div>
@@ -490,17 +495,20 @@
                                 </div>
                                 <div>
                                     <p>{{ decode(guest.name) }}</p>
-                                    <p>{{ decode(guest.telephone) }} {{ banned_users.find(user => user.telephone === guest.telephone)?"Numéro banni":"" }}</p>
+                                    <p>
+                                        {{ decode(guest.telephone) }}
+                                        <span v-if="banned_users.find(user => user.telephone === guest.telephone)">Numéro banni</span>
+                                        <span v-else class="button" @click="{createdBanned_user.telephone=guest.telephone;createBanned_user();}">Bannir</span>
+                                    </p>
                                 </div>
                                 <div>
-                                    <p>{{ decode(cares.find(care => care.id === guest.care_id)?.name || '') }}</p>
+                                    <p>{{ decode(cares.find(care => care.id === guest.care_id)?.name || 'Non spécifié') }}</p>
                                     <p>{{ decode(guest.text).length<255?decode(guest.text):decode(guest.text).slice(0,255)+'...' }}</p>
                                 </div>
                             </div>
                             <div class="actions">
-                                <span @click="console.log(guest.id)" class="edit">V</span>
-                                <span @click="console.log('ban :'+guest.telephone)" class="delete">B</span>
-                                <span @click="console.log(guest.id)" class="delete">X</span>
+                                <span @click="updateGuestbook(guest)" class="edit">V</span>
+                                <span @click="deleteGuestbook(guest.id)" class="delete">X</span>
                             </div>
                         </div>
                     </div>
@@ -532,8 +540,8 @@
                         </div>
                     </div>
                     <div class="card-entries">
-                        <p :class="{invisible:creatingBanned_user}" @click="banned_userCreate">+</p>
-                        <form :class="{invisible:!creatingBanned_user}">
+                            <p class="plus" :class="{invisible: creatingBanned_user}" @click="banned_userCreate">+</p>
+                        <form :class="{invisible: !creatingBanned_user}">
                             <div>
                                 <div>
                                     <div>
@@ -703,6 +711,12 @@ const toggleGuestbook = async () => {
     : "0px";
 };
 
+const banned_userCreate = async () :void => {
+    creatingBanned_user.value = true;
+    await nextTick();
+    banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+}
+
 const userEdit = async (index :number, user) :void => {
     editingUser.value = index;
     editedUser.value = transformUser(user);
@@ -722,12 +736,6 @@ const appointmentEdit = async (index :number, appointment) :void => {
     editedAppointment.value = transformAppointment(appointment);
     await nextTick();
     appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
-}
-
-const banned_userCreate = async (index :number, user) :void => {
-    creatingBanned_user.value = true;
-    await nextTick();
-    banned_usersHeight.value = appointmentsContent.value.scrollHeight + "px";
 }
 
 const transformUser = (user) => ({
@@ -776,7 +784,7 @@ const createBanned_user = async () => {
             return;
         }
         else{
-            banned_users.value.push(createdBanned_user.value);
+            banned_users.value.push({ ...createdBanned_user.value });
             modalTitle.value = "Succès"
             modalText.value = "Le numéro a été bloqué."
             modalOpen.value = true;
@@ -794,7 +802,6 @@ const createBanned_user = async () => {
         resetBanned_user(createdBanned_user);
         await nextTick();
         banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
-        return;
     }
     creatingBanned_user.value = false;
     resetBanned_user(createdBanned_user);
@@ -839,7 +846,6 @@ const updateUser = async () => {
         modalTitle.value = "Échec"
         modalText.value = "La modification de l'administrateur n'a pas pu avoir lieu."
         modalOpen.value = true;
-        return;
     }
     editingUser.value = undefined;
 }
@@ -883,7 +889,6 @@ const updateMiscellaneous_text = async () => {
         modalTitle.value = "Échec"
         modalText.value = "La modification de la phrase d'accroche n'a pas pu avoir lieu."
         modalOpen.value = true;
-        return;
     }
     editingMiscellaneous_text.value = undefined;
 }
@@ -927,7 +932,6 @@ const updateAppointment = async () => {
             modalText.value = "Le rendez-vous a été modifié."
             modalOpen.value = true;
             editingAppointment.value = undefined;
-            return;
         }
     } catch(err) {
         console.error(err);
@@ -935,6 +939,223 @@ const updateAppointment = async () => {
         modalText.value = "La modification du rendez-vous n'a pas pu avoir lieu."
         modalOpen.value = true;
         return;
+    }
+}
+
+const updateGuestbook = async (guest) => {
+    const id = guest.id;
+    const updatingGuestbook = {
+        is_displayed: !guest.is_displayed
+    }
+    try {
+        const res = await fetch(`http://localhost:3000/api/guestbook/update/${id}`, {
+          method: "put",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`},
+          body: JSON.stringify(updatingGuestbook)
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "La modification de la visibilité du post n'a pas pu avoir lieu."
+            modalOpen.value = true;
+            return;
+        }
+        else{
+            const updatedIndex = guestbook.value.findIndex((post) => post.id === id);
+            if (updatedIndex !== -1) {
+                guestbook.value[updatedIndex] = {
+                    ...guestbook.value[updatedIndex],
+                    ...updatingGuestbook,
+                };
+            }
+            modalTitle.value = "Succès"
+            modalText.value = `Le post a été rendu ${updatingGuestbook.is_displayed?'visible':'invisible'}.`
+            modalOpen.value = true;
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "La modification de la visibilité du post n'a pas pu avoir lieu."
+        modalOpen.value = true;
+        return;
+    }
+}
+
+const deleteAppointment = async (id) => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/appointments/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "L'évènement n'a pas pu été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = appointments.value.findIndex((appointment) => appointment.id === id);
+            appointments.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "L'évènement a été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "L'évènement n'a pas pu été effacé."
+        modalOpen.value = true;
+        await nextTick();
+        appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+    }
+}
+
+const deleteUser = async (id) => {
+    if(id === 1) {
+        modalTitle.value = "Échec"
+        modalText.value = "Le compte administrateur principal ne peut pa être effacé."
+        modalOpen.value = true;
+        await nextTick();
+        usersHeight.value = usersContent.value.scrollHeight + "px";
+        return;
+    }
+    try {
+        const res = await fetch(`http://localhost:3000/api/users/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "Le compte administrateur n'a pas pu été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            usersHeight.value = usersContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = users.value.findIndex((user) => user.id === id);
+            users.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "Le compte administrateur a été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            usersHeight.value = usersContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "Le compte administrateur n'a pas pu été effacé."
+        modalOpen.value = true;
+        await nextTick();
+        usersHeight.value = usersContent.value.scrollHeight + "px";
+    }
+}
+
+const deleteCare = async (id) => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/cares/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "Le soin n'a pas pu été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            caresHeight.value = caresContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = cares.value.findIndex((care) => care.id === id);
+            cares.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "Le soin a été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            caresHeight.value = caresContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "Le soin n'a pas pu été effacé."
+        modalOpen.value = true;
+        await nextTick();
+        caresHeight.value = caresContent.value.scrollHeight + "px";
+    }
+}
+
+const deleteEvent = async (id) => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/events/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "L'évènement n'a pas pu été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            eventsHeight.value = eventsContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = events.value.findIndex((event) => event.id === id);
+            events.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "L'évènement a été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            eventsHeight.value = eventsContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "L'évènement n'a pas pu été effacé."
+        modalOpen.value = true;
+        await nextTick();
+        eventsHeight.value = eventsContent.value.scrollHeight + "px";
+    }
+}
+
+const deleteGuestbook = async (id) => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/guestbook/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "Le post n'a pas pu été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            guestbookHeight.value = guestbookContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = guestbook.value.findIndex((guest) => guest.id === id);
+            guestbook.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "Le post a été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            guestbookHeight.value = guestbookContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "Le post n'a pas pu été effacé."
+        modalOpen.value = true;
+        await nextTick();
+        guestbookHeight.value = guestbookContent.value.scrollHeight + "px";
     }
 }
 
@@ -969,7 +1190,6 @@ const deleteBanned_user = async (id) => {
         modalOpen.value = true;
         await nextTick();
         banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
-        return;
     }
 }
 
@@ -1086,9 +1306,16 @@ p, h3 {
 }
 
 .card-entries {
-    padding: 0.25rem 0.5rem;
     background-color: #daccea;
     border-radius: 5px;
+}
+
+.plus {
+    padding: 0.25rem 0.5rem;
+}
+
+.card-entries>div, .card-entries>form {
+    margin: 0.25rem 0.5rem;
 }
 
 .card-entries>div:first-of-type {
@@ -1127,32 +1354,27 @@ p, h3 {
 
 .edit {
     color: #33aa33;
-    cursor: pointer;
 }
 
 .delete {
     color: #aa3333;
 }
 
-h3 {
+h3, .button {
     text-align: center;
     color: #fbf9ea;
-    /* background-color: #B398C9; */
     background-color: #234899;
     border-radius: 5px;
 }
 
-h3, .edit, .delete, .button {
+h3, .edit, .delete, .plus, .button {
     cursor: pointer;
 }
 
 .button {
-    color: #fbf9ea;
-    background-color: #234899;
     width: 100%;
     padding: 0 10px;
     border: #fbf9ea solid 1px;
-    border-radius: 5px;
 }
 
 .loading {
@@ -1171,8 +1393,12 @@ h3, .edit, .delete, .button {
 }
 
 @media only screen and (min-width: 770px) {
-    .card-entries {
+    .plus {
         padding: 1rem 3rem;
+    }
+
+    .card-entries>div, .card-entries>form {
+        margin: 1rem 3rem;
     }
 
     .card-entries>div:first-of-type {
