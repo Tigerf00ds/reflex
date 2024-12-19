@@ -1,9 +1,8 @@
+<script setup lang="ts"></script>
+
 <template>
     <div class="loader"></div>
 </template>
-
-<script setup lang="ts">
-</script>
 
 <style scoped>
 .loader {
