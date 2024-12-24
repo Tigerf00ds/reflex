@@ -9,10 +9,25 @@ const router = createRouter({
       component: () => import("../views/LandingPageView.vue"), // c'est du lazy loading : ça permet de charger les composants seulement quand on en a besoin
     },
     {
-      path: "/prestations",
-      name: "prestations",
-      component: () => import("../views/PrestationsView.vue"),
+      path: "/entreprise",
+      name: "entreprise",
+      component: () => import("../views/EntrepriseView.vue"),
     },
+    {
+      path: '/salon-domicile',
+      name: 'salon-domicile',
+      component: () => import("../views/SalonDomicileView.vue"), // Composant à afficher
+    },
+    {
+      path: "/structure",
+      name: "structure",
+      component: () => import("../views/StructureView.vue"),
+    },
+    // {
+    //   path: "/prestations",
+    //   name: "prestations",
+    //   component: () => import("../views/PrestationsView.vue"),
+    // },
     {
       path: "/reservation",
       name: "reservation",
@@ -23,16 +38,21 @@ const router = createRouter({
       name: "contact",
       component: () => import("../views/ContactView.vue"),
     },
-    {
-      path: "/login",
-      name: "login",
-      component: () => import("../views/LoginView.vue"),
-    },
+    // {
+    //   path: "/login",
+    //   name: "login",
+    //   component: () => import("../views/LoginView.vue"),
+    // },
     {
       path: "/presentation",
       name: "presentation",
       component: () => import("../views/PresentationView.vue"),
     },
+    // {
+    //   path: "/Back-office",
+    //   name: "Back-office",
+    //   component: () => import("../views/BackOfficeView.vue"),
+    // },
     {
       path: "/about",
       name: "about",

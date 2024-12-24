@@ -3,19 +3,19 @@
   <header class="header">
     <div class="header-content">
       <a href="/">
-        <img src="../assets/Etre.png" alt="Logo" class="logo" />
+        <img src="../assets/Etre2.png" alt="Logo" class="logo" />
       </a>
       <nav class="nav">
         <a href="/">Landing Page</a>
-        <a href="prestations">Mes Prestations</a>
+        <a href="Entreprise">Entreprise</a>
+        <a href="Salon-Domicile">Salon & Domicile</a>
+        <a href="Structure">Structure</a> 
+        <!-- <a href="prestations">Mes Prestations</a> -->
         <a href="Reservation">Réservation</a>
         <a href="presentation">Présentation</a>
-        <!-- <a href="#">Salon</a>
-        <a href="#">Entreprises</a>
-        <a href="#">Structures</a> -->
         <a href="Contact">Contact</a>
         <!-- <a href="#">Évènements</a> -->
-        <a href="login">Login</a>
+        <!-- <a href="login">Login</a> -->
       </nav>
     </div>
   </header>
@@ -28,7 +28,10 @@
   justify-content: space-between; /* Logo à gauche et navigation à droite */
   align-items: center;
   padding: 20px;
-  background-color: #f5f5f5;
+  background-image: url('../assets/damier.png'); /* Ajout de l'image en arrière-plan */
+  background-size: cover; /* L'image couvre toute la largeur */
+  background-repeat: no-repeat;
+  background-position: center; /* Centrer l'image */
   border-bottom: 1px solid rgba(0, 0, 0, 0.5);
   position: fixed;
   width: 100%;

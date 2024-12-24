@@ -3,13 +3,13 @@
 <template>
   <div class="services">
     <div class="title">
-      <h1>Mes Prestations</h1>
+      <h1>Mes prestations en entreprise</h1>
     </div>
     <div class="photos">
       <div class="carre">
         <div class="imgsupport">
           <div class="txt">Réflexologies</div>
-          <img src="../assets/pied.png" alt="" />
+          <img src="../assets/chambre.png" alt="" />
           <div class="prix">
             <ul>
               <li>
@@ -70,7 +70,7 @@
       <div class="carre">
         <div class="imgsupport">
           <div class="txt">Ateliers</div>
-          <img src="../assets/pied.png" alt="" />
+          <img src="../assets/cranien.jpg" alt="" />
           <div class="prix">
             <ul>
               <li>

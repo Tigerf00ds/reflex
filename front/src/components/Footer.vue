@@ -3,12 +3,12 @@
   <footer class="footer">
     <nav class="footer-nav">
       <a href="Reservation">Réservation</a>
-      <a href="#">Salon</a>
-      <a href="#">Entreprises</a>
-      <a href="#">Structures</a>
+      <a href="Salon-Domicile">Salon & Domicile</a>
+      <a href="Entreprise">Entreprise</a>
+      <a href="Structure">Structure</a>
       <a href="Contact">Contact</a>
       <a href="#">Évènements</a>
-      <a href="#">Présentation</a>
+      <a href="Présentation">Présentation</a>
       <a href="#">Mentions légales</a>
     </nav>
   </footer>
@@ -19,6 +19,10 @@
 .footer {
   background-color: #e5e0ff; /* Violet pâle */
   padding: 20px 0;
+  background-image: url('../assets/damier.png'); /* Ajout de l'image en arrière-plan */
+  background-size: cover; /* L'image couvre toute la largeur */
+  background-repeat: no-repeat;
+  background-position: center; /* Centrer l'image */
   text-align: center;
   display: flex;
   justify-content: center;
