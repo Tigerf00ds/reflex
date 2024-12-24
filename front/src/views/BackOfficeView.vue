@@ -1,8 +1,12 @@
 <template>
+    <InfoModal 
+        :isOpen="modalOpen"
+        :title="modalTitle"
+        :text="modalText"
+        @emitModal="modalOpen=false"/>
     <div class="wrapper">
-        <h2>Back-office</h2>
+        <h2 @click="modalOpen=true">Back-office</h2>
         <div class="card">
-            {{ editedUser.email }}
             <h3  @click="toggleUsers">Comptes administrateurs</h3>
             <div ref="usersContent" 
                 class="menu-content" 
@@ -17,7 +21,7 @@
                             <div>
                                 <p>{{ user.email }}</p>
                             </div>
-                            <div class="actions"><span @click="userEdit(index, user)" class="edit">E</span><span v-if="!user.id===1" @click="console.log(user.id)" class="delete">X</span></div>
+                            <div class="actions"><span @click="userEdit(index, user)" class="edit">E</span><span v-if="user.id!==1" @click="deleteUser(user.id)" class="delete">X</span></div>
                         </div>
                         <form :class="{invisible: index!==editingUser}" class="card-entries">
                             <div>
@@ -57,11 +61,81 @@
                                     </p>
                                 </div>
                             </div>
-                            <div class="actions"><span @click="updateUser" class="edit">O</span><span @click="editingUser=null" class="delete">X</span></div>
+                            <div class="actions">
+                                <span v-if="
+                                    !editedUser.email ||
+                                    !editedUser.email.match(emailRegex) ||
+                                    !editedUser.password.match(/.{10,255}/) ||
+                                    !editedUser.password.match(/[a-z]/) ||
+                                    !editedUser.password.match(/[A-Z]/) ||
+                                    !editedUser.password.match(/[0-9]/) ||
+                                    !editedUser.password.match(/[!@#$%^&*(),;.?:{}|<>]/) ||
+                                    !editedUser.password_confirm ||
+                                    editedUser.password_confirm !== editedUser.password
+                                ">
+                                    O
+                                </span>
+                                <span v-else @click="updateUser" class="edit">O</span>
+                                <span @click="editingUser=null" class="delete">X</span>
+                            </div>
                         </form>
                     </div>
-                    <div class="card-entries" @click="console.log('add')">
-                        <p>+</p>
+                    <div class="card-entries">
+                        <p class="plus" :class="{invisible: creatingUser}" @click="userCreate">+</p>
+                        <form :class="{invisible: !creatingUser}">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>
+                                            <label name="newUserMail" for="newUserMail">
+                                                E-mail :
+                                                <input v-model="createdUser.email" type="tel" name="newUserMail" id="newUserMail">
+                                            </label>
+                                            <span v-if="!createdUser.email" style="color: #aa3333">Requis</span>
+                                            <span v-if="createdUser.email && !createdUser.email.match(emailRegex)" style="color: #aa3333">Invalide</span>
+                                        </p>
+                                        <p>Le mot de passe doit contenir :</p>
+                                        <p><span style="color: #aa3333" v-if="!createdUser.password.match(/.{10,255}/)">X</span><span style="color: #33aa33" v-else>O</span> 10 caractères</p>
+                                        <p><span style="color: #aa3333" v-if="!createdUser.password.match(/[a-z]/)">X</span><span style="color: #33aa33" v-else>O</span> 1 minuscule</p>
+                                        <p><span style="color: #aa3333" v-if="!createdUser.password.match(/[A-Z]/)">X</span><span style="color: #33aa33" v-else>O</span> 1 majuscule</p>
+                                        <p><span style="color: #aa3333" v-if="!createdUser.password.match(/[0-9]/)">X</span><span style="color: #33aa33" v-else>O</span> 1 chiffre</p>
+                                        <p><span style="color: #aa3333" v-if="!createdUser.password.match(/[!@#$%^&*(),;.?:{}|<>]/)">X</span><span style="color: #33aa33" v-else>O</span> 1 caractère spécial parmis !@#$%^&*(),;.?":{}|<></p>
+                                        <p>
+                                            <label for="newUserPassword">
+                                                Mot de passe : 
+                                                <input v-model="createdUser.password" type="password" name="newUserPassword" id="newUserPassword">
+                                                <span style="color: #aa3333" v-if="!createdUser.password">Requis</span>
+                                            </label>
+                                        </p>
+                                        <p>
+                                            <label for="newUserPassword_confirm">
+                                                Confirmation : 
+                                                <input v-model="createdUser.password_confirm" type="password" name="newUserPassword_confirm" id="newUserPassword_confirm">
+                                                <span style="color: #aa3333" v-if="!createdUser.password_confirm">Requis</span>
+                                                <span style="color: #aa3333" v-if="createdUser.password_confirm && createdUser.password_confirm !== createdUser.password">Doit être identique au mot de passe.</span>
+                                            </label>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <span v-if="
+                                    !createdUser.email ||
+                                    !createdUser.email.match(emailRegex) ||
+                                    !createdUser.password.match(/.{10,255}/) ||
+                                    !createdUser.password.match(/[a-z]/) ||
+                                    !createdUser.password.match(/[A-Z]/) ||
+                                    !createdUser.password.match(/[0-9]/) ||
+                                    !createdUser.password.match(/[!@#$%^&*(),;.?:{}|<>]/) ||
+                                    !createdUser.password_confirm ||
+                                    createdUser.password_confirm !== createdUser.password
+                                    ">
+                                    O
+                                </span>
+                                <span v-else @click="createUser" class="edit">O</span>
+                                <span @click="creatingUser=false" class="delete">X</span>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -92,16 +166,21 @@
                                 <div>
                                     <p>Patient/e : {{ decode(appointment.name) }}</p>
                                     <p>E-mail : <a :href="'mailto:'+decode(appointment.email)">{{ decode(appointment.email) }}</a></p>
-                                    <p>Téléphone : <a :href="'tel:'+decode(appointment.telephone)">{{ decode(appointment.telephone)}}</a></p>
+                                    <p>
+                                        Téléphone : <a :href="'tel:'+decode(appointment.telephone)">{{ decode(appointment.telephone)}}</a>
+                                        <span v-if="banned_users.find(user => user.telephone === appointment.telephone)">Numéro banni</span>
+                                        <span v-else class="button" @click="{createdBanned_user.telephone=appointment.telephone;createBanned_user();}">Bannir</span>
+                                    </p>
                                 </div>
                                 <div>
-                                    <p>Soin : {{ decode(cares.find(care => care.id === appointment.care_id)?.name || 'Horaire bloqué')  }}</p>
+                                    <p>Soin : {{ decode(cares.find(care => care.id === appointment.care_id)?.name || 'Horaire bloquée')  }}</p>
                                     <p>Lieu : {{ decode(appointment.address) }}</p>
                                     <p>Durée : {{ durationBetween(appointment.time_start, appointment.time_end) }} minutes</p>
-                                    <p>Tarif : {{ monisation(appointment.price) }}</p>
+                                    <p v-if="appointment.time_start===0">Tarif : {{ monisation(cares.find(care => care.id === appointment.care_id)?.day_price || 0) }}</p>
+                                    <p v-else>Tarif : {{ monisation(Math.floor(((cares.find(care => care.id === appointment.care_id)?.price || 0)/60*durationBetween(appointment.time_start, appointment.time_end))+(appointment.address==='salon'?0:(cares.find(care => care.id === appointment.care_id)?.travel_expenses || 0)))) }}</p>
                                 </div>
                             </div>
-                            <div class="actions"><span @click="appointmentEdit(index, appointment)" class="edit">E</span><span @click="console.log(appointment.id)" class="delete">X</span></div>
+                            <div class="actions"><span @click="appointmentEdit(index, appointment)" class="edit">E</span><span @click="deleteAppointment(appointment.id)" class="delete">X</span></div>
                         </div>
                         <form :class="{invisible: index!==editingAppointment}" class="card-entries">
                             <div>
@@ -135,17 +214,20 @@
                                         </p>
                                         <span
                                             class="button"
-                                            @click.prevent="{editedAppointment.time_start=0;editedAppointment.duration=24*60;editedAppointment.address='salon';}"
+                                            @click.prevent="{editedAppointment.time_start=0;editedAppointment.duration=24*60;}"
                                             v-if="
-                                                (new Date().getFullYear()<parseInt(editedAppointment.year_booked) ||
-                                                (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
-                                                new Date().getMonth()+2<parseInt(editedAppointment.month_booked))
-                                                || (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
-                                                new Date().getMonth()+2===parseInt(editedAppointment.month_booked) &&
-                                                new Date().getDate()<parseInt(editedAppointment.day_booked))) &&
-                                                (cares.find(care => care.id === editedAppointment.care_id)?.is_home ||
+                                                // logique pour empêcher une date avant un moisà garder pour le côté user
+                                                //
+                                                // (new Date().getFullYear()<parseInt(editedAppointment.year_booked) ||
+                                                // (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
+                                                // new Date().getMonth()+2<parseInt(editedAppointment.month_booked)) ||
+                                                // (new Date().getFullYear()===parseInt(editedAppointment.year_booked) &&
+                                                // new Date().getMonth()+2===parseInt(editedAppointment.month_booked) &&
+                                                // new Date().getDate()<parseInt(editedAppointment.day_booked))) &&
+                                                cares.find(care => care.id === editedAppointment.care_id)?.is_home ||
                                                 cares.find(care => care.id === editedAppointment.care_id)?.is_structure ||
-                                                cares.find(care => care.id === editedAppointment.care_id)?.is_company)">
+                                                cares.find(care => care.id === editedAppointment.care_id)?.is_company ||
+                                                editedAppointment.care_id == 0">
                                                 Toute la journée
                                             </span>
                                     </div>
@@ -208,7 +290,7 @@
                                                 >
                                                 Horaire déjà prise
                                             </span>
-                                            <span v-if="editedAppointment.address!=='salon'">
+                                            <span v-if="editedAppointment.address!=='salon' && editedAppointment.time_start!==0">
                                                 Départ : {{ hourisation(addMinutes((editedAppointment.time_start-100),30)) }} Retour : {{ hourisation(addMinutes(addMinutes(editedAppointment.time_start,editedAppointment.duration),30)) }}
                                             </span>
                                         </p>
@@ -237,6 +319,8 @@
                                             <input v-model="editedAppointment.telephone" type="tel" :name="'telephone'+appointment.id" :id="'telephone'+appointment.id">
                                             <span style="color: #aa3333" v-if="!editedAppointment.telephone">Requis</span>
                                             <span style="color: #aa3333" v-if="editedAppointment.telephone && !editedAppointment.telephone.match(telRegex)">Invalide</span>
+                                            <span v-if="editedAppointment.telephone && editedAppointment.telephone.match(telRegex) && !banned_users.find(user => user.telephone === editedAppointment.telephone)" class="button" @click="{createdBanned_user.telephone=editedAppointment.telephone;createBanned_user();}">Bannir</span>
+                                            <span v-if="banned_users.find(user => user.telephone === editedAppointment.telephone)">Numéro banni</span>
                                         </label>
                                     </p>
                                 </div>
@@ -244,8 +328,15 @@
                                     <p>
                                         <label :for="'care'+appointment.id">
                                             Soin : 
-                                            <select v-model="editedAppointment.care_id" :name="'care'+appointment.id" :id="'care'+appointment.id">
-                                                <option value="0">Bloquage d'horaire</option>
+                                            <select
+                                                v-model="editedAppointment.care_id"
+                                                @change="{
+                                                    if(editedAppointment.duration>cares.find(care => care.id === editedAppointment.care_id)?.max_duration)editedAppointment.duration=cares.find(care => care.id === editedAppointment.care_id)?.max_duration;
+                                                    if(editedAppointment.duration<cares.find(care => care.id === editedAppointment.care_id)?.min_duration)editedAppointment.duration=cares.find(care => care.id === editedAppointment.care_id)?.min_duration;
+                                                    }"
+                                                :name="'care'+appointment.id"
+                                                :id="'care'+appointment.id">
+                                                <option value="0">Blocage d'horaire</option>
                                                 <option v-for="care in cares" :value="care.id" :key="care.id">{{ decode(care.name) }}</option>
                                             </select>
                                         </label>
@@ -253,23 +344,277 @@
                                     <p>
                                         <label :for="'address'+appointment.id">
                                             Lieu : 
-                                            <input v-model="editedAppointment.address" type="text" :name="'address'+appointment.id" :id="'address'+appointment.id"> <span class="button" @click.prevent="editedAppointment.address='salon'">Au salon</span>
+                                            <input v-model="editedAppointment.address" type="text" :name="'address'+appointment.id" :id="'address'+appointment.id"> <span v-if="cares.find(care => care.id === editedAppointment.care_id)?.is_salon" class="button" @click.prevent="editedAppointment.address='salon'">Au salon</span>
                                         </label>
                                         <span style="color: #aa3333" v-if="!editedAppointment.address">Requis</span>
                                         <span style="color: #aa3333" v-if="editedAppointment.address && !editedAppointment.address.match(addressRegex)">Invalide</span>
                                     </p>
+                                    <p v-if="editedAppointment.time_start===0">Tarif : {{ monisation(cares.find(care => care.id === editedAppointment.care_id)?.day_price || 0) }}</p>
+                                    <p v-else>Tarif : {{ monisation(Math.floor(((cares.find(care => care.id === editedAppointment.care_id)?.price || 0)/60*editedAppointment.duration)+(editedAppointment.address==='salon'?0:(cares.find(care => care.id === editedAppointment.care_id)?.travel_expenses || 0)))) }}</p>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <span v-if="
+                                        parseInt(editedAppointment.year_booked)<new Date().getFullYear() ||
+                                        new Date().getFullYear()>parseInt(editedAppointment.year_booked) ||
+                                        new Date().getFullYear()===parseInt(editedAppointment.year_booked) && new Date().getMonth()+1>parseInt(editedAppointment.month_booked) ||
+                                        new Date().getFullYear()===parseInt(editedAppointment.year_booked) && new Date().getMonth()+1===parseInt(editedAppointment.month_booked) && new Date().getDate()>=parseInt(editedAppointment.day_booked) ||
+                                        (
+                                            editedAppointment.address==='salon' &&
+                                                    appointments.some(
+                                                        appointment => 
+                                                            appointment.id !== editedAppointment.id &&
+                                                            appointment.date_booked.split('-')[0] === editedAppointment.year_booked &&
+                                                            appointment.date_booked.split('-')[1] === editedAppointment.month_booked &&
+                                                            appointment.date_booked.slice(0,10).split('-')[2] === editedAppointment.day_booked &&
+                                                            appointment.time_return > editedAppointment.time_start &&
+                                                            appointment.time_depart < addMinutes(editedAppointment.time_start, editedAppointment.duration)
+                                                    )
+                                        ) ||
+                                        (
+                                            editedAppointment.address!=='salon' &&
+                                                    appointments.some(
+                                                        appointment => 
+                                                            appointment.id !== editedAppointment.id &&
+                                                            appointment.date_booked.split('-')[0] === editedAppointment.year_booked &&
+                                                            appointment.date_booked.split('-')[1] === editedAppointment.month_booked &&
+                                                            appointment.date_booked.slice(0,10).split('-')[2] === editedAppointment.day_booked &&
+                                                            appointment.time_return > addMinutes(editedAppointment.time_start-100,30) &&
+                                                            appointment.time_depart < addMinutes(editedAppointment.time_start, editedAppointment.duration+30)
+                                                    )
+                                        ) ||
+                                        !editedAppointment.name ||
+                                        !editedAppointment.name.match(wordRegex) ||
+                                        !editedAppointment.email ||
+                                        !editedAppointment.email.match(emailRegex) ||
+                                        !editedAppointment.telephone ||
+                                        !editedAppointment.telephone.match(telRegex) ||
+                                        !editedAppointment.address ||
+                                        !editedAppointment.address.match(addressRegex)
+                                ">
+                                    O
+                                </span>
+                                <span v-else @click="updateAppointment" class="edit">O</span>
+                                <span @click="editingAppointment=null" class="delete">X</span>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-entries">
+                        <p class="plus" :class="{invisible: creatingAppointment}" @click="appointmentCreate">+</p>
+                        <form :class="{invisible: !creatingAppointment}">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>
+                                            <label for="newAppointmentYear">
+                                                Date : 
+                                                <select v-model="createdAppointment.year_booked" name="newAppointmentYear" id="newAppointmentYear">
+                                                    <option v-for="index in 50" :value="(new Date().getFullYear()-1+index).toString()" :key="'year'+index">{{ new Date().getFullYear()-1+index }}</option>
+                                                </select>
+                                                <select v-model="createdAppointment.month_booked" name="newAppointmentMonth" id="newAppointmentMonth">
+                                                    <option v-for="index in 12" :value="index.toString().length<2?'0'+index.toString():index.toString()" :key="'month'+index">{{ index.toString().length<2?'0':'' }}{{ index.toString() }}</option>
+                                                </select>
+                                                <select v-model="createdAppointment.day_booked" name="newAppointmentDay" id="newAppointmentDay">
+                                                    <option v-for="index in 31" :value="index.toString().length<2?'0'+index.toString():index.toString()" :key="'day'+index">{{ index.toString().length<2?'0':'' }}{{ index.toString() }}</option>
+                                                </select>
+                                                <span style="color: #aa3333" v-if="parseInt(createdAppointment.year_booked)<new Date().getFullYear()">
+                                                    Invalide
+                                                </span>
+                                                <span style="color: #aa3333" v-if="new Date().getFullYear()>parseInt(createdAppointment.year_booked)">
+                                                    Invalide
+                                                </span>
+                                                <span style="color: #aa3333" v-if="new Date().getFullYear()===parseInt(createdAppointment.year_booked) && new Date().getMonth()+1>parseInt(createdAppointment.month_booked)">
+                                                    Invalide
+                                                </span>
+                                                <span style="color: #aa3333" v-if="new Date().getFullYear()===parseInt(createdAppointment.year_booked) && new Date().getMonth()+1===parseInt(createdAppointment.month_booked) && new Date().getDate()>=parseInt(createdAppointment.day_booked)">
+                                                    Invalide
+                                                </span>
+                                            </label>
+                                        </p>
+                                        <span
+                                            class="button"
+                                            @click.prevent="{createdAppointment.time_start=0;createdAppointment.duration=24*60;}"
+                                            v-if="
+                                                // logique pour empêcher une date avant un moisà garder pour le côté user
+                                                //
+                                                // (new Date().getFullYear()<parseInt(createdAppointment.year_booked) ||
+                                                // (new Date().getFullYear()===parseInt(createdAppointment.year_booked) &&
+                                                // new Date().getMonth()+2<parseInt(createdAppointment.month_booked)) ||
+                                                // (new Date().getFullYear()===parseInt(createdAppointment.year_booked) &&
+                                                // new Date().getMonth()+2===parseInt(createdAppointment.month_booked) &&
+                                                // new Date().getDate()<parseInt(createdAppointment.day_booked))) &&
+                                                cares.find(care => care.id === createdAppointment.care_id)?.is_home ||
+                                                cares.find(care => care.id === createdAppointment.care_id)?.is_structure ||
+                                                cares.find(care => care.id === createdAppointment.care_id)?.is_company ||
+                                                createdAppointment.care_id == 0">
+                                                Toute la journée
+                                            </span>
+                                    </div>
+                                    <div>
+                                        <p>
+                                            <label  for="newAppointmentTime_start">
+                                                Début : 
+                                                <select v-model="createdAppointment.time_start" name="newAppointmentTime_start" id="newAppointmentTime_start">
+                                                    <option
+                                                        v-for="index in 24*12+1"
+                                                        :value="(Math.floor((index-1)*5/60)*100)+(Math.floor((index-1)*5%60))"
+                                                        :key="'newAppointmentTime_start'+index"
+                                                        >
+                                                        {{ hourisation((Math.floor((index-1)*5/60)*100)+(Math.floor((index-1)*5%60))) }}
+                                                    </option>
+                                                </select>
+                                                Durée : 
+                                                <input
+                                                    v-model="createdAppointment.duration"
+                                                    type="number"
+                                                    :min="cares.find(care => care.id === createdAppointment.care_id)?.min_duration"
+                                                    :max="cares.find(care => care.id === createdAppointment.care_id)?.max_duration"
+                                                    step="5"
+                                                    name="newAppointmentDuration" id="newAppointmentDuration"
+                                                    >
+                                            </label>
+                                        </p>
+                                        <p>
+                                            <span
+                                                style="color: #aa3333"
+                                                v-if="
+                                                    createdAppointment.address==='salon' &&
+                                                    appointments.some(
+                                                        appointment => 
+                                                            appointment.id !== createdAppointment.id &&
+                                                            appointment.date_booked.split('-')[0] === createdAppointment.year_booked &&
+                                                            appointment.date_booked.split('-')[1] === createdAppointment.month_booked &&
+                                                            appointment.date_booked.slice(0,10).split('-')[2] === createdAppointment.day_booked &&
+                                                            appointment.time_return > createdAppointment.time_start &&
+                                                            appointment.time_depart < addMinutes(createdAppointment.time_start, createdAppointment.duration)
+                                                    )
+                                                "
+                                                >
+                                                Horaire déjà prise
+                                            </span>
+                                            <span
+                                                style="color: #aa3333"
+                                                v-if="
+                                                    createdAppointment.address!=='salon' &&
+                                                    appointments.some(
+                                                        appointment => 
+                                                            appointment.id !== createdAppointment.id &&
+                                                            appointment.date_booked.split('-')[0] === createdAppointment.year_booked &&
+                                                            appointment.date_booked.split('-')[1] === createdAppointment.month_booked &&
+                                                            appointment.date_booked.slice(0,10).split('-')[2] === createdAppointment.day_booked &&
+                                                            appointment.time_return > addMinutes(createdAppointment.time_start-100,30) &&
+                                                            appointment.time_depart < addMinutes(createdAppointment.time_start, createdAppointment.duration+30)
+                                                    )
+                                                "
+                                                >
+                                                Horaire déjà prise
+                                            </span>
+                                            <span v-if="createdAppointment.address!=='salon' && createdAppointment.time_start!==0">
+                                                Départ : {{ hourisation(addMinutes((createdAppointment.time_start-100),30)) }} Retour : {{ hourisation(addMinutes(addMinutes(createdAppointment.time_start,createdAppointment.duration),30)) }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div>
                                     <p>
-                                        <label  :for="'name'+appointment.id">
-                                            Tarif : {{ monisation(Math.floor(((cares.find(care => care.id === appointment.care_id)?.price || 0)/60*editedAppointment.duration)+(editedAppointment.address==='salon'?0:(cares.find(care => care.id === appointment.care_id)?.travel_expenses || 0)))) }}
+                                        <label for="newAppointmentName">
+                                            Patient/e : 
+                                            <input v-model="createdAppointment.name" type="text" name="newAppointmentName" id="newAppointmentName">
+                                            <span style="color: #aa3333" v-if="!createdAppointment.name">Requis</span>
+                                            <span style="color: #aa3333" v-if="createdAppointment.name && !createdAppointment.name.match(wordRegex)">Invalide</span>
+                                        </label>
+                                    </p>
+                                    <p>
+                                        <label for="newAppointmentEmail">
+                                            E-mail : 
+                                            <input v-model="createdAppointment.email" type="email" name="newAppointmentEmail" id="newAppointmentEmail">
+                                            <span style="color: #aa3333" v-if="!createdAppointment.email">Requis</span>
+                                            <span style="color: #aa3333" v-if="createdAppointment.email && !createdAppointment.email.match(emailRegex)">Invalide</span>
+                                        </label>
+                                    </p>
+                                    <p>
+                                        <label for="newAppointmentTelephone">
+                                            Téléphone : 
+                                            <input v-model="createdAppointment.telephone" type="tel" name="newAppointmentTelephone" id="newAppointmentTelephone">
+                                            <span style="color: #aa3333" v-if="!createdAppointment.telephone">Requis</span>
+                                            <span style="color: #aa3333" v-if="createdAppointment.telephone && !createdAppointment.telephone.match(telRegex)">Invalide</span>
+                                            <span v-if="createdAppointment.telephone && createdAppointment.telephone.match(telRegex) && !banned_users.find(user => user.telephone === createdAppointment.telephone)" class="button" @click="{createdBanned_user.telephone=createdAppointment.telephone;createBanned_user();}">Bannir</span>
+                                            <span v-if="banned_users.find(user => user.telephone === createdAppointment.telephone)">Numéro banni</span>
                                         </label>
                                     </p>
                                 </div>
+                                <div>
+                                    <p>
+                                        <label for="newAppointmentCare">
+                                            Soin : 
+                                            <select
+                                                v-model="createdAppointment.care_id"
+                                                @change="{
+                                                    if(createdAppointment.duration>cares.find(care => care.id === createdAppointment.care_id)?.max_duration)createdAppointment.duration=cares.find(care => care.id === createdAppointment.care_id)?.max_duration;
+                                                    if(createdAppointment.duration<cares.find(care => care.id === createdAppointment.care_id)?.min_duration)createdAppointment.duration=cares.find(care => care.id === createdAppointment.care_id)?.min_duration;
+                                                    }"
+                                                name="newAppointmentCare"
+                                                id="newAppointmentCare">
+                                                <option value="0">Blocage d'horaire</option>
+                                                <option v-for="care in cares" :value="care.id" :key="care.id">{{ decode(care.name) }}</option>
+                                            </select>
+                                        </label>
+                                    </p>
+                                    <p>
+                                        <label for="newAppointmentAddress">
+                                            Lieu : 
+                                            <input v-model="createdAppointment.address" type="text" name="newAppointmentAddress" id="newAppointmentAddress"> <span v-if="cares.find(care => care.id === createdAppointment.care_id)?.is_salon" class="button" @click.prevent="createdAppointment.address='salon'">Au salon</span>
+                                        </label>
+                                        <span style="color: #aa3333" v-if="!createdAppointment.address">Requis</span>
+                                        <span style="color: #aa3333" v-if="createdAppointment.address && !createdAppointment.address.match(addressRegex)">Invalide</span>
+                                    </p>
+                                    <p v-if="createdAppointment.time_start===0">Tarif : {{ monisation(cares.find(care => care.id === createdAppointment.care_id)?.day_price || 0) }}</p>
+                                    <p v-else>Tarif : {{ monisation(Math.floor(((cares.find(care => care.id === createdAppointment.care_id)?.price || 0)/60*createdAppointment.duration)+(createdAppointment.address==='salon'?0:(cares.find(care => care.id === createdAppointment.care_id)?.travel_expenses || 0)))) }}</p>
+                                </div>
                             </div>
-                            <div class="actions"><span @click="updateAppointment" class="edit">O</span><span @click="editingAppointment=null" class="delete">X</span></div>
+                            <div class="actions">
+                                <span v-if="
+                                    parseInt(createdAppointment.year_booked)<new Date().getFullYear() ||
+                                        new Date().getFullYear()>parseInt(createdAppointment.year_booked) ||
+                                        new Date().getFullYear()===parseInt(createdAppointment.year_booked) && new Date().getMonth()+1>parseInt(createdAppointment.month_booked) ||
+                                        new Date().getFullYear()===parseInt(createdAppointment.year_booked) && new Date().getMonth()+1===parseInt(createdAppointment.month_booked) && new Date().getDate()>=parseInt(createdAppointment.day_booked) ||
+                                        (
+                                            createdAppointment.address==='salon' &&
+                                                    appointments.some(
+                                                        appointment => 
+                                                            appointment.date_booked.split('-')[0] === createdAppointment.year_booked &&
+                                                            appointment.date_booked.split('-')[1] === createdAppointment.month_booked &&
+                                                            appointment.date_booked.slice(0,10).split('-')[2] === createdAppointment.day_booked &&
+                                                            appointment.time_return > createdAppointment.time_start &&
+                                                            appointment.time_depart < addMinutes(createdAppointment.time_start, createdAppointment.duration)
+                                                    )
+                                        ) ||
+                                        (
+                                            createdAppointment.address!=='salon' &&
+                                                    appointments.some(
+                                                        appointment => 
+                                                            appointment.date_booked.split('-')[0] === createdAppointment.year_booked &&
+                                                            appointment.date_booked.split('-')[1] === createdAppointment.month_booked &&
+                                                            appointment.date_booked.slice(0,10).split('-')[2] === createdAppointment.day_booked &&
+                                                            appointment.time_return > addMinutes(createdAppointment.time_start-100,30) &&
+                                                            appointment.time_depart < addMinutes(createdAppointment.time_start, createdAppointment.duration+30)
+                                                    )
+                                        ) ||
+                                        !createdAppointment.name ||
+                                        !createdAppointment.name.match(wordRegex) ||
+                                        !createdAppointment.email ||
+                                        !createdAppointment.email.match(emailRegex) ||
+                                        !createdAppointment.telephone ||
+                                        !createdAppointment.telephone.match(telRegex) ||
+                                        !createdAppointment.address ||
+                                        !createdAppointment.address.match(addressRegex)
+                                    ">
+                                    O
+                                </span>
+                                <span v-else @click="createAppointment" class="edit">O</span>
+                                <span @click="creatingAppointment=false" class="delete">X</span>
+                            </div>
                         </form>
-                    </div>
-                    <div class="card-entries" @click="console.log('add')">
-                        <p>+</p>
                     </div>
                 </div>
             </div>
@@ -298,22 +643,23 @@
                                 <div>
                                     <div>
                                         <p>Durée : {{ care.min_duration }} minutes à {{ care.max_duration }} minutes</p>
-                                        <p>Déplacement : {{ !care.is_home&&!care.is_structure&&!care.is_company?'Non':'Oui' }} {{ care.is_home||care.is_structure||care.is_company?'Frais de déplacement : '+monisation(care.travel_expenses):'' }}</p>
+                                        <p>Déplacement : {{ !care.is_home&&!care.is_structure&&!care.is_company?'Non':'Oui' }}</p>
                                     </div>
                                     <div>
                                         <p>Prix : {{ monisation(care.price) }} /h</p>
-                                        <p>TVA : {{ care.tax/100 }}%</p>
+                                        <p v-if="care.is_home||care.is_structure||care.is_company">Frais de déplacement : {{ monisation(care.travel_expenses) }}</p>
+                                        <p v-if="care.is_whole_day">Prix à la journée : {{ monisation(care.day_price) }}</p>
                                     </div>
                                 </div>
                             </div>
-                        <div class="actions"><span @click="console.log(care.id)" class="edit">E</span><span @click="console.log(care.id)" class="delete">X</span></div>
+                        <div class="actions"><span @click="console.log('linkto edit care.id')" class="edit">E</span><span @click="deleteCare(care.id)" class="delete">X</span></div>
+                        </div>
+                    </div>
+                    <div class="card-entries">
+                        <p class="plus" :class="{invisible: creatingBanned_user}" @click="console.log('linkto care create')">+</p>
                     </div>
                 </div>
-                <div class="card-entries" @click="console.log('add')">
-                    <p>+</p>
-                </div>
             </div>
-        </div>
         </div>
         <div class="card">
             <h3 @click="toggleEvents">Évenements</h3>
@@ -337,11 +683,61 @@
                                     <p>{{ event.short_text }}</p>
                                 </div>
                             </div>
-                            <div class="actions"><span @click="console.log(event.id)" class="edit">E</span><span @click="console.log(event.id)" class="delete">X</span></div>
+                            <div class="actions"><span @click="console.log('linkto edit event.id')" class="edit">E</span><span @click="deleteEvent(event.id)" class="delete">X</span></div>
                         </div>
                     </div>
-                    <div class="card-entries" @click="console.log('add')">
-                        <p>+</p>
+                    <div class="card-entries">
+                        <p class="plus" :class="{invisible: creatingBanned_user}" @click="console.log('linkto event create')">+</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <h3  @click="toggleMiscellaneous_texts">Textes du site</h3>
+            <div ref="miscellaneous_textsContent" 
+                class="menu-content" 
+                :style="{ maxHeight: miscellaneous_textsOpen ? miscellaneous_textsHeight : '0px' }">
+                <div class="loading">
+                    <LoadingSpinner v-if="isLoading"/>
+                    <p v-if="!isLoading && miscellaneous_texts.length<1">Aucune signature</p>
+                </div>
+                <div class="card-content" v-if="!isLoading && miscellaneous_texts.length">
+                    <div class="entry-wrapper" v-for="(misc, index) in miscellaneous_texts" :key="misc.id">
+                        <div :class="{invisible: index===editingMiscellaneous_text}" class="card-entries">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>{{ miscellaneous_texts[0]===misc?"Phrase d'accroche":"Texte de la page d'info" }}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p>{{ decode(misc.text) }}</p>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <span v-if="misc.id===1" @click="miscellaneous_textEdit(index, misc)" class="edit">E</span>
+                                <span v-else @click="console.log(`routerlink to ${misc.id}`)" class="edit">E</span>
+                            </div>
+                        </div>
+                        <form :class="{invisible: index!==editingMiscellaneous_text}" class="card-entries">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>{{ miscellaneous_texts[0]===misc?"Phrase d'accroche":"Texte de la page d'info" }}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <textarea v-model="editedMiscellaneous_text.text" :name="'misc'+misc.id" :id="'misc'+misc.id" cols="45" rows="10"></textarea>
+                                    <span style="color: #aa3333" v-if="!editedMiscellaneous_text.text" >Requis</span>
+                                    <span style="color: #aa3333" v-if="editedMiscellaneous_text.text && !editedMiscellaneous_text.text.match(descriptionRegex)" >Invalide</span>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <span v-if="!editedMiscellaneous_text.text || !editedMiscellaneous_text.text.match(descriptionRegex)" >E</span>
+                                <span v-else @click="updateMiscellaneous_text" class="edit">E</span>
+                                <span @click="editingMiscellaneous_text=null" class="delete">X</span>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -361,19 +757,79 @@
                             <div>
                                 <div>
                                     <div>
-                                        <p>{{ decode(guest.name) }}</p>
+                                        <p>{{ decode(guest.title) }}</p>
                                     </div>
-                                    <p>{{ decode(cares.find(care => care.id === guest.care_id)?.name || '') }}</p>
+                                    <p>{{ guest.is_displayed?'Visible':'Non Visible' }}</p>
                                 </div>
                                 <div>
-                                    <p>{{ decode(guest.title) }}</p>
+                                    <p>{{ decode(guest.name) }}</p>
+                                    <p>
+                                        {{ decode(guest.telephone) }}
+                                        <span v-if="banned_users.find(user => user.telephone === guest.telephone)">Numéro banni</span>
+                                        <span v-else class="button" @click="{createdBanned_user.telephone=guest.telephone;createBanned_user();}">Bannir</span>
+                                    </p>
                                 </div>
                                 <div>
-                                    <p>{{ decode(guest.text) }}</p>
+                                    <p>{{ decode(cares.find(care => care.id === guest.care_id)?.name || 'Non spécifié') }}</p>
+                                    <p>{{ decode(guest.text).length<255?decode(guest.text):decode(guest.text).slice(0,255)+'...' }}</p>
                                 </div>
                             </div>
-                            <div class="actions"><span @click="console.log(guest.id)" class="edit">V</span><span @click="console.log(guest.id)" class="delete">X</span></div>
+                            <div class="actions">
+                                <span @click="updateGuestbook(guest)" class="edit">V</span>
+                                <span @click="deleteGuestbook(guest.id)" class="delete">X</span>
+                            </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <h3  @click="toggleBanned_users">Numéros bannis</h3>
+            <div ref="banned_usersContent" 
+                class="menu-content" 
+                :style="{ maxHeight: banned_usersOpen ? banned_usersHeight : '0px' }">
+                <div class="loading">
+                    <LoadingSpinner v-if="isLoading"/>
+                    <p v-if="!isLoading && banned_users.length<1">Aucune signature</p>
+                </div>
+                <div class="card-content" v-if="!isLoading && banned_users.length">
+                    <div class="entry-wrapper" v-for="user in banned_users" :key="user.id">
+                        <div class="card-entries">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>Téléphone : {{ decode(user.telephone) }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <span @click="deleteBanned_user(user.id)" class="delete">X</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-entries">
+                        <p class="plus" :class="{invisible: creatingBanned_user}" @click="banned_userCreate">+</p>
+                        <form :class="{invisible: !creatingBanned_user}">
+                            <div>
+                                <div>
+                                    <div>
+                                        <p>
+                                            <label name="newBanned_user" for="newBanned_user">
+                                                Téléphone :
+                                                <input v-model="createdBanned_user.telephone" type="tel" name="newBanned_user" id="newBanned_user">
+                                            </label>
+                                            <span v-if="!createdBanned_user.telephone" style="color: #aa3333">Requis</span>
+                                            <span v-if="createdBanned_user.telephone && !createdBanned_user.telephone.match(telRegex)" style="color: #aa3333">Invalide</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <span v-if="!createdBanned_user.telephone || !createdBanned_user.telephone.match(telRegex)">O</span>
+                                <span v-else @click="createBanned_user" class="edit">O</span>
+                                <span @click="creatingBanned_user=false" class="delete">X</span>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -389,17 +845,39 @@ import hourisation from '@/modules/hourisation';
 import durationBetween from '@/modules/durationBetween';
 import monisation from '@/modules/monisation';
 import addMinutes from '@/modules/addMinutes';
+import InfoModal from '@/components/InfoModal.vue';
 
+const modalOpen = ref(false);
+const modalTitle = ref("");
+const modalText = ref("");
 const token = ref<string>(localStorage.getItem('token')||'');
 const users = ref();
+const miscellaneous_texts = ref();
 const appointments = ref();
+const banned_users = ref();
 const cares = ref();
 const events = ref();
 const guestbook = ref();
 const isLoading = ref<boolean>(true);
-const loadingError = ref<string>('');
-const editingAppointment = ref<number>();
+const creatingUser = ref<boolean>(false);
+const creatingAppointment = ref<boolean>(false);
+const creatingBanned_user = ref<boolean>(false);
 const editingUser = ref<number>();
+const editingMiscellaneous_text = ref<number>();
+const editingAppointment = ref<number>();
+const editedUser = ref({
+    id: 0,
+    email: '',
+    password: '',
+    password_confirm: ''
+});
+const editedMiscellaneous_text = ref({
+    id: 0,
+    text: '',
+    filespaths: '',
+    filesnames: '',
+    filesdescriptions: ''
+});
 const editedAppointment = ref({
     id: 0,
     care_id: 0,
@@ -414,30 +892,52 @@ const editedAppointment = ref({
     day_booked: '',
     duration: 0
 });
-const editedUser = ref({
-    id: 0,
+const createdUser = ref({
     email: '',
     password: '',
     password_confirm: ''
 });
+const createdAppointment = ref({
+    care_id: 0,
+    address: '',
+    name: '',
+    email: '',
+    telephone: '',
+    date_booked: '',
+    time_start: 0,
+    year_booked: '',
+    month_booked: '',
+    day_booked: '',
+    duration: 0
+});
+const createdBanned_user = ref({
+    telephone: ''
+});
 const usersContent = ref(null);
+const miscellaneous_textsContent = ref(null);
 const appointmentsContent = ref(null);
+const banned_usersContent = ref(null);
 const caresContent = ref(null);
 const eventsContent = ref(null);
 const guestbookContent = ref(null);
 const usersOpen = ref(false);
+const miscellaneous_textsOpen = ref(false);
 const appointmentsOpen = ref(false);
+const banned_usersOpen = ref(false);
 const caresOpen = ref(false);
 const eventsOpen = ref(false);
 const guestbookOpen = ref(false);
 const usersHeight = ref("0px");
+const miscellaneous_textsHeight = ref("0px");
 const appointmentsHeight = ref("0px");
+const banned_usersHeight = ref("0px");
 const caresHeight = ref("0px");
 const eventsHeight = ref("0px");
 const guestbookHeight = ref("0px");
 let resizeObserver;
 
 const wordRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']{1,255}$/;
+const descriptionRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ,.:!?$€£¥)(\s\-']{1,255}$/;
 const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
 const telRegex = /^[0-9]{10,13}$/;
 const addressRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\-']{1,255}$/;
@@ -450,11 +950,27 @@ const toggleUsers = async () => {
     : "0px";
 };
 
+const toggleMiscellaneous_texts = async () => {
+    miscellaneous_textsOpen.value = !miscellaneous_textsOpen.value;
+    await nextTick();
+    miscellaneous_textsHeight.value = miscellaneous_textsOpen.value 
+    ? miscellaneous_textsContent.value.scrollHeight + "px"
+    : "0px";
+};
+
 const toggleAppointments = async () => {
     appointmentsOpen.value = !appointmentsOpen.value;
     await nextTick();
     appointmentsHeight.value = appointmentsOpen.value 
     ? appointmentsContent.value.scrollHeight + "px"
+    : "0px";
+};
+
+const toggleBanned_users = async () => {
+    banned_usersOpen.value = !banned_usersOpen.value;
+    await nextTick();
+    banned_usersHeight.value = banned_usersOpen.value 
+    ? banned_usersContent.value.scrollHeight + "px"
     : "0px";
 };
 
@@ -482,11 +998,22 @@ const toggleGuestbook = async () => {
     : "0px";
 };
 
-const appointmentEdit = async (index :number, appointment) :void => {
-    editingAppointment.value = index;
-    editedAppointment.value = transformAppointment(appointment);
+const userCreate = async () :void => {
+    creatingUser.value = true;
     await nextTick();
-    usersHeight.value = appointmentsContent.value.scrollHeight + "px";
+    usersHeight.value = usersContent.value.scrollHeight + "px";
+}
+
+const appointmentCreate = async () :void => {
+    creatingAppointment.value = true;
+    await nextTick();
+    appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+}
+
+const banned_userCreate = async () :void => {
+    creatingBanned_user.value = true;
+    await nextTick();
+    banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
 }
 
 const userEdit = async (index :number, user) :void => {
@@ -495,6 +1022,32 @@ const userEdit = async (index :number, user) :void => {
     await nextTick();
     usersHeight.value = usersContent.value.scrollHeight + "px";
 }
+
+const miscellaneous_textEdit = async (index :number, miscellaneous_text) :void => {
+    editingMiscellaneous_text.value = index;
+    editedMiscellaneous_text.value = transformMiscellaneous_text(miscellaneous_text);
+    await nextTick();
+    miscellaneous_textsHeight.value = miscellaneous_textsContent.value.scrollHeight + "px";
+}
+
+const appointmentEdit = async (index :number, appointment) :void => {
+    editingAppointment.value = index;
+    editedAppointment.value = transformAppointment(appointment);
+    await nextTick();
+    appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+}
+
+const transformUser = (user) => ({
+    ...user,
+    email: decode(user.email),
+    password: '',
+    password_confirm: '',
+});
+
+const transformMiscellaneous_text = (miscellaneous_text) => ({
+    ...miscellaneous_text,
+    text: decode(miscellaneous_text.text),
+});
 
 const transformAppointment = (appointment) => ({
     ...appointment,
@@ -508,12 +1061,167 @@ const transformAppointment = (appointment) => ({
     duration: durationBetween(appointment.time_start, appointment.time_end),
 });
 
-const transformUser = (user) => ({
-    ...user,
-    email: decode(user.email),
+const resetUser = (user) => ({
+    email: '',
     password: '',
     password_confirm: '',
 });
+
+const resetAppointment = (appointment) => ({
+    care_id: 0,
+    address: '',
+    name: '',
+    email: '',
+    telephone: '',
+    date_booked: '',
+    year_booked: '',
+    month_booked: '',
+    day_booked: '',
+    time_start: 0,
+    duration: 0,
+});
+
+const resetBanned_user = (user) => ({
+    telephone: '',
+});
+
+const createUser = async () => {
+    const newUser = {
+        email : createdUser.value.email,
+        password : createdUser.value.password
+    }
+    try {
+        const res = await fetch(`http://localhost:3000/api/users/create`, {
+          method: "post",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`},
+          body: JSON.stringify(newUser)
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "La création d'un compte administrateur n'a pas pu avoir lieu."
+            modalOpen.value = true;
+            creatingUser.value = false;
+            resetUser(createdUser);
+            await nextTick();
+            usersHeight.value = usersContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            users.value.push({ ...newUser});
+            modalTitle.value = "Succès"
+            modalText.value = "Le compte administrateur a été créé."
+            modalOpen.value = true;
+            creatingUser.value = false;
+            resetUser(createdUser);
+            await nextTick();
+            usersHeight.value = usersContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "La création d'un compte administrateur n'a pas pu avoir lieu."
+        modalOpen.value = true;
+        resetUser(createdUser);
+        await nextTick();
+        usersHeight.value = usersContent.value.scrollHeight + "px";
+    }
+    creatingUser.value = false;
+    resetUser(createdUser);
+}
+
+const createAppointment = async () => {
+    createdAppointment.value.date_booked = `${createdAppointment.value.year_booked}-${createdAppointment.value.month_booked}-${createdAppointment.value.day_booked}`;
+    const newAppointment = {
+        care_id: createdAppointment.value.care_id,
+        address: createdAppointment.value.address,
+        name: createdAppointment.value.name,
+        email: createdAppointment.value.email,
+        telephone: createdAppointment.value.telephone,
+        date_booked: createdAppointment.value.date_booked,
+        time_start: createdAppointment.value.time_start,
+        duration: createdAppointment.value.duration
+    }
+    try {
+        const res = await fetch(`http://localhost:3000/api/appointments/create`, {
+          method: "post",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`},
+          body: JSON.stringify(newAppointment)
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "La prise d'un rendez-vous n'a pas pu avoir lieu."
+            modalOpen.value = true;
+            creatingAppointment.value = false;
+            resetAppointment(createdAppointment);
+            await nextTick();
+            appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            appointments.value.push({ ...newAppointment});
+            modalTitle.value = "Succès"
+            modalText.value = "Le rendez-vous a été pris."
+            modalOpen.value = true;
+            creatingAppointment.value = false;
+            resetAppointment(createdAppointment);
+            await nextTick();
+            appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "La prise d'un rendez-vous n'a pas pu avoir lieu."
+        modalOpen.value = true;
+        resetAppointment(createdAppointment);
+        await nextTick();
+        appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+    }
+    creatingAppointment.value = false;
+    resetAppointment(createdAppointment);
+}
+
+const createBanned_user = async () => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/banned_users/create`, {
+          method: "post",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`},
+          body: JSON.stringify(createdBanned_user.value)
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "Le blocage de numéro n'a pas pu avoir lieu."
+            modalOpen.value = true;
+            creatingBanned_user.value = false;
+            resetBanned_user(createdBanned_user);
+            await nextTick();
+            banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            banned_users.value.push({ ...createdBanned_user.value });
+            modalTitle.value = "Succès"
+            modalText.value = "Le numéro a été bloqué."
+            modalOpen.value = true;
+            creatingBanned_user.value = false;
+            resetBanned_user(createdBanned_user);
+            await nextTick();
+            banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "Le blocage de numéro n'a pas pu avoir lieu."
+        modalOpen.value = true;
+        resetBanned_user(createdBanned_user);
+        await nextTick();
+        banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+    }
+    creatingBanned_user.value = false;
+    resetBanned_user(createdBanned_user);
+}
 
 const updateUser = async () => {
     const id = editedUser.value.id;
@@ -529,24 +1237,76 @@ const updateUser = async () => {
         });
         if(res.status!==200){
             userEdit(editingUser.value, editedUser.value);
+            modalTitle.value = "Échec"
+            modalText.value = "La modification de l'administrateur n'a pas pu avoir lieu."
+            modalOpen.value = true;
             editingUser.value = undefined;
             return;
         }
         else{
-            const updatedIndex = users.value.findIndex((app) => app.id === id);
+            const updatedIndex = users.value.findIndex((user) => user.id === id);
             if (updatedIndex !== -1) {
                 users.value[updatedIndex] = {
                     ...users.value[updatedIndex],
                     ...updatingUser,
                 };
             }
+            modalTitle.value = "Succès"
+            modalText.value = "L'administrateur a été modifié."
+            modalOpen.value = true;
             editingUser.value = undefined;
             return;
         }
     } catch(err) {
         console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "La modification de l'administrateur n'a pas pu avoir lieu."
+        modalOpen.value = true;
     }
     editingUser.value = undefined;
+}
+
+const updateMiscellaneous_text = async () => {
+    const id = editedMiscellaneous_text.value.id;
+    const updatingMiscellaneous_text = {
+        text : editedMiscellaneous_text.value.text,
+        filesdescriptions : []
+    }
+    try {
+        const res = await fetch(`http://localhost:3000/api/miscellaneous_texts/update/${id}`, {
+          method: "put",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`},
+          body: JSON.stringify(updatingMiscellaneous_text)
+        });
+        if(res.status!==200){
+            miscellaneous_textEdit(editingMiscellaneous_text.value, editedMiscellaneous_text.value);
+            modalTitle.value = "Échec"
+            modalText.value = "La modification de la phrase d'accroche n'a pas pu avoir lieu."
+            modalOpen.value = true;
+            editingMiscellaneous_text.value = undefined;
+            return;
+        }
+        else{
+            const updatedIndex = miscellaneous_texts.value.findIndex((misc) => misc.id === id);
+            if (updatedIndex !== -1) {
+                miscellaneous_texts.value[updatedIndex] = {
+                    ...miscellaneous_texts.value[updatedIndex],
+                    ...updatingMiscellaneous_text,
+                };
+            }
+            modalTitle.value = "Succès"
+            modalText.value = "La phrase d'accroche a été modifiéé."
+            modalOpen.value = true;
+            editingMiscellaneous_text.value = undefined;
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "La modification de la phrase d'accroche n'a pas pu avoir lieu."
+        modalOpen.value = true;
+    }
+    editingMiscellaneous_text.value = undefined;
 }
 
 const updateAppointment = async () => {
@@ -570,24 +1330,283 @@ const updateAppointment = async () => {
         });
         if(res.status!==200){
             appointmentEdit(editingAppointment.value, editedAppointment.value);
+            modalTitle.value = "Échec"
+            modalText.value = "La modification du rendez-vous n'a pas pu avoir lieu."
+            modalOpen.value = true;
             editingAppointment.value = undefined;
             return;
         }
         else{
-            const updatedIndex = appointments.value.findIndex((app) => app.id === id);
+            const updatedIndex = appointments.value.findIndex((appointment) => appointment.id === id);
             if (updatedIndex !== -1) {
                 appointments.value[updatedIndex] = {
                     ...appointments.value[updatedIndex],
                     ...updatingAppointment,
                 };
             }
+            modalTitle.value = "Succès"
+            modalText.value = "Le rendez-vous a été modifié."
+            modalOpen.value = true;
             editingAppointment.value = undefined;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "La modification du rendez-vous n'a pas pu avoir lieu."
+        modalOpen.value = true;
+        return;
+    }
+}
+
+const updateGuestbook = async (guest) => {
+    const id = guest.id;
+    const updatingGuestbook = {
+        is_displayed: !guest.is_displayed
+    }
+    try {
+        const res = await fetch(`http://localhost:3000/api/guestbook/update/${id}`, {
+          method: "put",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`},
+          body: JSON.stringify(updatingGuestbook)
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "La modification de la visibilité du post n'a pas pu avoir lieu."
+            modalOpen.value = true;
+            return;
+        }
+        else{
+            const updatedIndex = guestbook.value.findIndex((post) => post.id === id);
+            if (updatedIndex !== -1) {
+                guestbook.value[updatedIndex] = {
+                    ...guestbook.value[updatedIndex],
+                    ...updatingGuestbook,
+                };
+            }
+            modalTitle.value = "Succès"
+            modalText.value = `Le post a été rendu ${updatingGuestbook.is_displayed?'visible':'invisible'}.`
+            modalOpen.value = true;
             return;
         }
     } catch(err) {
         console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "La modification de la visibilité du post n'a pas pu avoir lieu."
+        modalOpen.value = true;
+        return;
     }
-    // TODO feedback de validation
+}
+
+const deleteAppointment = async (id) => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/appointments/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "Le rendez-vous n'a pas pu été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = appointments.value.findIndex((appointment) => appointment.id === id);
+            appointments.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "Le rendez-vous a été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "Le rendez-vous n'a pas pu été effacé."
+        modalOpen.value = true;
+        await nextTick();
+        appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+    }
+}
+
+const deleteUser = async (id) => {
+    if(id === 1) {
+        modalTitle.value = "Échec"
+        modalText.value = "Le compte administrateur principal ne peut pa être effacé."
+        modalOpen.value = true;
+        await nextTick();
+        usersHeight.value = usersContent.value.scrollHeight + "px";
+        return;
+    }
+    try {
+        const res = await fetch(`http://localhost:3000/api/users/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "Le compte administrateur n'a pas pu été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            usersHeight.value = usersContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = users.value.findIndex((user) => user.id === id);
+            users.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "Le compte administrateur a été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            usersHeight.value = usersContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "Le compte administrateur n'a pas pu été effacé."
+        modalOpen.value = true;
+        await nextTick();
+        usersHeight.value = usersContent.value.scrollHeight + "px";
+    }
+}
+
+const deleteCare = async (id) => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/cares/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "Le soin n'a pas pu été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            caresHeight.value = caresContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = cares.value.findIndex((care) => care.id === id);
+            cares.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "Le soin a été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            caresHeight.value = caresContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "Le soin n'a pas pu été effacé."
+        modalOpen.value = true;
+        await nextTick();
+        caresHeight.value = caresContent.value.scrollHeight + "px";
+    }
+}
+
+const deleteEvent = async (id) => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/events/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "L'évènement n'a pas pu été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            eventsHeight.value = eventsContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = events.value.findIndex((event) => event.id === id);
+            events.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "L'évènement a été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            eventsHeight.value = eventsContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "L'évènement n'a pas pu été effacé."
+        modalOpen.value = true;
+        await nextTick();
+        eventsHeight.value = eventsContent.value.scrollHeight + "px";
+    }
+}
+
+const deleteGuestbook = async (id) => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/guestbook/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "Le post n'a pas pu été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            guestbookHeight.value = guestbookContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = guestbook.value.findIndex((guest) => guest.id === id);
+            guestbook.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "Le post a été effacé."
+            modalOpen.value = true;
+            await nextTick();
+            guestbookHeight.value = guestbookContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "Le post n'a pas pu été effacé."
+        modalOpen.value = true;
+        await nextTick();
+        guestbookHeight.value = guestbookContent.value.scrollHeight + "px";
+    }
+}
+
+const deleteBanned_user = async (id) => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/banned_users/delete/${id}`, {
+          method: "delete",
+          headers: {'Content-Type': 'application/json', 'Authorization': `bearer ${token.value}`}
+        });
+        if(res.status!==200){
+            modalTitle.value = "Échec"
+            modalText.value = "Le numéro n'a pas pu été authorisé."
+            modalOpen.value = true;
+            await nextTick();
+            banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+            return;
+        }
+        else{
+            const updatedIndex = banned_users.value.findIndex((user) => user.id === id);
+            banned_users.value.splice(updatedIndex, 1);
+            modalTitle.value = "Succès"
+            modalText.value = "Le numéro a été authorisé."
+            modalOpen.value = true;
+            await nextTick();
+            banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+            return;
+        }
+    } catch(err) {
+        console.error(err);
+        modalTitle.value = "Échec"
+        modalText.value = "Le numéro n'a pas pu été authorisé."
+        modalOpen.value = true;
+        await nextTick();
+        banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
+    }
 }
 
 onMounted(async () => {
@@ -595,8 +1614,14 @@ onMounted(async () => {
     if (usersOpen.value) {
         usersHeight.value = usersContent.value.scrollHeight + "px";
     }
+    if (miscellaneous_textsOpen.value) {
+        miscellaneous_textsHeight.value = miscellaneous_textsContent.value.scrollHeight + "px";
+    }
     if (appointmentsOpen.value) {
         appointmentsHeight.value = appointmentsContent.value.scrollHeight + "px";
+    }
+    if (banned_usersOpen.value) {
+        banned_usersHeight.value = banned_usersContent.value.scrollHeight + "px";
     }
     if (caresOpen.value) {
         caresHeight.value = caresContent.value.scrollHeight + "px";
@@ -611,15 +1636,26 @@ onMounted(async () => {
     try {
         await nextTick();
         if (usersContent.value) resizeObserver.observe(usersContent.value);
+        if (miscellaneous_textsContent.value) resizeObserver.observe(miscellaneous_textsContent.value);
         if (appointmentsContent.value) resizeObserver.observe(appointmentsContent.value);
+        if (banned_usersContent.value) resizeObserver.observe(banned_usersContent.value);
+        if (caresContent.value) resizeObserver.observe(caresContent.value);
+        if (eventsContent.value) resizeObserver.observe(eventsContent.value);
+        if (guestbookContent.value) resizeObserver.observe(guestbookContent.value);
 
         const tokenHeader = { Authorization: `bearer ${token.value}` };
         const responses = await Promise.all([
             fetch('http://localhost:3000/api/users/', {
                 headers: { 'Content-Type': 'application/json', ...tokenHeader },
             }),
+            fetch('http://localhost:3000/api/miscellaneous_texts/', {
+                headers: { 'Content-Type': 'application/json' },
+            }),
             fetch('http://localhost:3000/api/appointments/', {
                 headers: { 'Content-Type': 'application/json' },
+            }),
+            fetch('http://localhost:3000/api/banned_users/', {
+                headers: { 'Content-Type': 'application/json', ...tokenHeader },
             }),
             fetch('http://localhost:3000/api/cares/', {
                 headers: { 'Content-Type': 'application/json' },
@@ -637,10 +1673,10 @@ onMounted(async () => {
             return res.json();
         }));
 
-        [users.value, appointments.value, cares.value, events.value, guestbook.value] = jsonResponses;
+        [users.value, miscellaneous_texts.value, appointments.value, banned_users.value, cares.value, events.value, guestbook.value] = jsonResponses;
     } catch (err) {
         console.error(err);
-        loadingError.value = 'Erreur de connexion au serveur';
+        return;
     } finally {
         isLoading.value = false;
     }
@@ -648,7 +1684,9 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   resizeObserver.unobserve(usersContent.value);
+  resizeObserver.unobserve(miscellaneous_textsContent.value);
   resizeObserver.unobserve(appointmentsContent.value);
+  resizeObserver.unobserve(banned_usersContent.value);
   resizeObserver.unobserve(caresContent.value);
   resizeObserver.unobserve(eventsContent.value);
   resizeObserver.unobserve(guestbookContent.value);
@@ -658,7 +1696,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .wrapper {
-    margin: 2rem auto;
+    margin: 0 auto;
+    padding-top: 2rem;
     min-height: 100vh;
     width: 100%;
     gap: 1rem;
@@ -682,9 +1721,16 @@ p, h3 {
 }
 
 .card-entries {
-    padding: 0.25rem 0.5rem;
     background-color: #daccea;
     border-radius: 5px;
+}
+
+.plus {
+    padding: 0.25rem 0.5rem;
+}
+
+.card-entries>div, .card-entries>form {
+    margin: 0.25rem 0.5rem;
 }
 
 .card-entries>div:first-of-type {
@@ -723,32 +1769,27 @@ p, h3 {
 
 .edit {
     color: #33aa33;
-    cursor: pointer;
 }
 
 .delete {
     color: #aa3333;
 }
 
-h3 {
+h3, .button {
     text-align: center;
     color: #fbf9ea;
-    /* background-color: #B398C9; */
     background-color: #234899;
     border-radius: 5px;
 }
 
-h3, .edit, .delete, .button {
+h3, .edit, .delete, .plus, .button {
     cursor: pointer;
 }
 
 .button {
-    color: #fbf9ea;
-    background-color: #234899;
     width: 100%;
     padding: 0 10px;
     border: #fbf9ea solid 1px;
-    border-radius: 5px;
 }
 
 .loading {
@@ -767,8 +1808,12 @@ h3, .edit, .delete, .button {
 }
 
 @media only screen and (min-width: 770px) {
-    .card-entries {
+    .plus {
         padding: 1rem 3rem;
+    }
+
+    .card-entries>div, .card-entries>form {
+        margin: 1rem 3rem;
     }
 
     .card-entries>div:first-of-type {

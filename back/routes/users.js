@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
     // DÉSACTIVÉ POUR LE TEST
     // authorizationJWT
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     const sql = 'SELECT * FROM users';
     db.query(sql, (err, results) => {
@@ -40,7 +40,7 @@ router.post('/create', async (req, res) => {
     // DÉSACTIVÉ POUR LE TEST
     // authorizationJWT
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     if(!emailPassValidate(req.body, emailPassSchema)){
         console.log(emailPassValidate.errors);
@@ -67,7 +67,7 @@ router.post('/create', async (req, res) => {
         console.error('Aucun numéro dans le mot de passe.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Aucun numéro dans le mot de passe.' });
     }
-    if(!password || !password.match(/[!@#$%^&*(),;.?:{}|<>]/)){
+    if(!password || !password.match(/[!@#$%^&*(),;.?":{}|<>]/)){
         console.error('Aucun caractère spécial dans le mot de passe.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Aucun caractère spécial dans le mot de passe.' });
     }
@@ -123,7 +123,7 @@ router.put('/update/:id', async (req, res) => {
     // DÉSACTIVÉ POUR LE TEST
     // authorizationJWT
     // if(req.session.user!=="admin"){
-    //     return res.status(401).json({ error: 'Interdit' });
+    //     return res.status(401).json({ error: 'Interdit.' });
     // }
     if(!emailPassValidate(req.body, emailPassSchema)){
         console.log(emailPassValidate.errors);
@@ -170,10 +170,12 @@ router.put('/update/:id', async (req, res) => {
     });
 });
 
-router.delete('/delete/:id', authorizationJWT, async (req, res) => {
-    if(req.session.user!=="admin"){
-        return res.status(401).json({ error: 'Forbidden.' });
-    }
+router.delete('/delete/:id', async (req, res) => {
+    // DÉSACTIVÉ POUR LE TEST
+    // authorizationJWT
+    // if(req.session.user!=="admin"){
+    //     return res.status(401).json({ error: 'Interdit.' });
+    // }
     const { id } = req.params;
     if(id === 1){
         console.error('Erreur de requête à la base de donnée.');
