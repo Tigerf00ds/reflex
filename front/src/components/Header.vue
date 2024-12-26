@@ -2,20 +2,20 @@
   <!-- Header -->
   <header class="header">
     <div class="header-content">
-      <a href="/">
+      <RouterLink to="/">
         <img src="../assets/Etre2.png" alt="Logo" class="logo" />
-      </a>
+      </RouterLink>
       <nav class="nav">
-        <a href="/">Landing Page</a>
-        <a href="Entreprise">Entreprise</a>
-        <a href="Salon-Domicile">Salon & Domicile</a>
-        <a href="Structure">Structure</a> 
-        <!-- <a href="prestations">Mes Prestations</a> -->
-        <a href="Reservation">Réservation</a>
-        <a href="presentation">Présentation</a>
-        <a href="Contact">Contact</a>
-        <!-- <a href="#">Évènements</a> -->
-        <!-- <a href="login">Login</a> -->
+        <RouterLink to="/">Landing Page</RouterLink>
+        <RouterLink to="Entreprise">Entreprise</RouterLink>
+        <RouterLink to="Salon-Domicile">Salon & Domicile</RouterLink>
+        <RouterLink to="Structure">Structure</RouterLink> 
+        <!-- <RouterLink to="prestations">Mes Prestations</RouterLink> -->
+        <RouterLink to="Reservation">Réservation</RouterLink>
+        <RouterLink to="presentation">Présentation</RouterLink>
+        <RouterLink to="Contact">Contact</RouterLink>
+        <!-- <RouterLink to="#">Évènements</RouterLink> -->
+        <!-- <RouterLink to="login">Login</RouterLink> -->
       </nav>
     </div>
   </header>

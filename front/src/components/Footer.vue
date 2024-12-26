@@ -2,14 +2,14 @@
   <!-- Footer -->
   <footer class="footer">
     <nav class="footer-nav">
-      <a href="Reservation">Réservation</a>
-      <a href="Salon-Domicile">Salon & Domicile</a>
-      <a href="Entreprise">Entreprise</a>
-      <a href="Structure">Structure</a>
-      <a href="Contact">Contact</a>
-      <a href="#">Évènements</a>
-      <a href="Présentation">Présentation</a>
-      <a href="#">Mentions légales</a>
+      <RouterLink to="Reservation">Réservation</RouterLink>
+      <RouterLink to="Salon-Domicile">Salon & Domicile</RouterLink>
+      <RouterLink to="Entreprise">Entreprise</RouterLink>
+      <RouterLink to="Structure">Structure</RouterLink>
+      <RouterLink to="Contact">Contact</RouterLink>
+      <RouterLink to="#">Évènements</RouterLink>
+      <RouterLink to="Présentation">Présentation</RouterLink>
+      <RouterLink to="#">Mentions légales</RouterLink>
     </nav>
   </footer>
 </template>
