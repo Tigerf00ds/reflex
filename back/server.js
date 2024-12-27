@@ -11,6 +11,7 @@ const banned_usersRoutes = require('./routes/banned_users.js');
 const eventsRoutes = require('./routes/events.js');
 const guestbookRoutes = require('./routes/guestbook.js');
 const contactRoutes = require('./routes/contact.js');
+const reservationRoutes = require('./routes/reservation.js');
 const helmet = require('helmet');
 const cors = require('cors');
 const swaggerJsDoc = require('swagger-jsdoc');
@@ -59,6 +60,7 @@ app.use('/api/banned_users', banned_usersRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/guestbook', guestbookRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/reservation', reservationRoutes);
 
 db.connect((err) => {
     if (err) {console.log(err);}

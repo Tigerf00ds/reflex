@@ -1,52 +1,136 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { reactive, ref } from 'vue';
+import { toast } from 'vue3-toastify';
+import "vue3-toastify/dist/index.css";
+
+type ReservationForm = {
+  nom: string;
+  prenom: string;
+  email: string;
+  phone: string;
+  type: string;
+  location: string;
+  address: string;
+  zipCode: string;
+  date: string;
+};
+
+const form = reactive<ReservationForm>({
+  nom: "",
+  prenom: "",
+  email: "",
+  phone: "",
+  type: "",
+  location: "",
+  address: "",
+  zipCode: "",
+  date: ""
+});
+
+async function submit(e: Event) {
+  e.preventDefault();
+
+  await fetch("http://localhost:3000/api/reservation", {
+    method: "post",
+    body: JSON.stringify(form),
+    headers: { "Content-type": "application/json" },
+  })
+    .then(async (responseHTTP) => {
+      if(responseHTTP.status === 500) {
+        const errorMessage = await responseHTTP.text()
+        return toast.error(errorMessage);
+      }
+
+      responseHTTP.text().then(responseValue => {
+        toast.success(responseValue);
+        form.nom = ''
+        form.prenom = ''
+        form.email = ''
+        form.address = ''
+        form.location = ''
+        form.phone = ''
+        form.date = ''
+        form.type = ''
+        form.zipCode = ''
+      })
+
+    })
+}
+
+const cares: any = ref([])
+
+const getData = () => {
+  fetch('http://localhost:3000/api/cares')
+    .then(res => res.json())
+    .then((response) => {      
+      cares.value = response // <---- assign to the ref's value
+      console.log(cares.value);
+    })
+    .catch((error) => {
+      console.log(error)
+    });
+}
+
+getData()
+
+</script>
 
 <template>
     <!-- Formulaire de réservation -->
     <div class="reservation-form">
       <h1>Réservation</h1>
-      <form>
+      <form @submit="submit">
         <div class="form-grid">
           <div class="input-container">
             <label for="nom">Nom</label>
-            <input id="nom" type="text" class="input-field" />
+            <input v-model="form.nom" id="nom" type="text" class="input-field" />
           </div>
           <div class="input-container">
             <label for="prenom">Prénom</label>
-            <input id="prenom" type="text" class="input-field" />
+            <input v-model="form.prenom" id="prenom" type="text" class="input-field" />
           </div>
           <div class="input-container">
             <label for="email">Adresse mail</label>
-            <input id="email" type="email" class="input-field" />
+            <input v-model="form.email" id="email" type="email" class="input-field" />
           </div>
           <div class="input-container">
             <label for="phone">Numéro de téléphone</label>
-            <input id="phone" type="tel" class="input-field" />
+            <input v-model="form.phone" id="phone" type="tel" class="input-field" />
           </div>
           <div class="input-container">
             <label for="type">Type de prestation</label>
-            <select id="type" class="input-field">
-              <option>Choisissez...</option>
+            <select v-model="form.type" id="type" class="input-field">
+              <option>Choisissez une option</option>
+              <option        
+                v-for="care in cares"
+                :key="care.id"
+              >
+                {{care.name}}
+              </option>
             </select>
           </div>
           <div class="input-container">
             <label for="lieu">Lieu de la prestation</label>
-            <select id="lieu" class="input-field">
-              <option>Choisissez...</option>
+            <select v-model="form.location" id="lieu" class="input-field">
+              <option>Choisissez une option</option>
+              <option>Salon & Domicile</option>
+              <option>Entreprise</option>
+              <option>Structure</option>
             </select>
           </div>
           <div class="input-container">
             <label for="address">Adresse</label>
-            <input id="address" type="text" class="input-field" />
+            <input v-model="form.address" id="address" type="text" class="input-field" />
           </div>
           <div class="input-container">
             <label for="postal">Code postal</label>
-            <input id="postal" type="text" class="input-field" />
+            <input v-model="form.zipCode" id="postal" type="text" class="input-field" />
           </div>
 
           <!-- Conteneur pour le champ Date et bouton -->
           <div class="input-container date-container">
             <label for="date">Date du rendez-vous</label>
-            <input id="date" type="date" class="input-field date-field" />
+            <input v-model="form.date" id="date" type="date" class="input-field date-field" />
             <button type="submit" class="submit-button">Réserver</button>
           </div>
         </div>

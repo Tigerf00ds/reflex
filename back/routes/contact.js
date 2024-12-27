@@ -14,7 +14,7 @@ router.post('/', async (req, res) => {
     }
   });
 
-  // Définition du contenu du mail
+  // Définition du contenu du mail 
   const mailOptions = {
     from: req.body.email,
     to: 'franck@gmail.com',
@@ -25,11 +25,9 @@ router.post('/', async (req, res) => {
   // Envoi du mail
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
-      console.log(error);
-      return res.status(500).send({ error: 'Erreur lors de l\'envoi du mail' });
+      return res.status(500).send({ error : 'Erreur lors de l\'envoi du mail'});
     } else {
-      console.log('Mail envoyé avec succès');
-      return res.status(200).send('Mail envoyé avec succès');
+      return res.status(200).send('Mail envoyé avec succès')
     }
   });
 });

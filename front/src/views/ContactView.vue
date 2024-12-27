@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { reactive } from "vue";
+import { toast } from "vue3-toastify";
+import "vue3-toastify/dist/index.css";
 
 type ContactForm = {
   nom: string;
@@ -17,20 +19,30 @@ const form = reactive<ContactForm>({
   message: "",
 });
 
-async function submitTest(e: Event) {
+async function submit(e: Event) {
   e.preventDefault();
-  
+
   await fetch("http://localhost:3000/api/contact", {
     method: "post",
     body: JSON.stringify(form),
     headers: { "Content-type": "application/json" },
   })
-    .then((response) => {
-      console.log("response: ", response);
+    .then(async (responseHTTP) => {
+      if(responseHTTP.status === 500) {
+        const errorMessage = await responseHTTP.text()
+        return toast.error(errorMessage);
+      }
+
+      responseHTTP.text().then(responseValue => {
+        toast.success(responseValue);
+        form.nom = ''
+        form.prenom = ''
+        form.email = ''
+        form.objet = ''
+        form.message = ''
+      })
+
     })
-    .catch((error) => {
-      console.log("error : \n", error);
-    });
 }
 </script>
 
@@ -38,7 +50,7 @@ async function submitTest(e: Event) {
   <!-- Formulaire de contact -->
   <div class="contact-form">
     <h1>Contact</h1>
-    <form @submit="submitTest">
+    <form @submit="submit">
       <div class="input-group">
         <label for="nom">Nom</label>
         <input v-model="form.nom" id="nom" type="text" class="input-field" />
