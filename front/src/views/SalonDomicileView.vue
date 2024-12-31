@@ -1,4 +1,19 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useTemplateRef } from 'vue';
+
+const carre1 = useTemplateRef("carre1");
+const carre2 = useTemplateRef("carre2");
+const carre3 = useTemplateRef("carre3");
+
+const toogleCarreActiveClass = (e: Event, element: HTMLDivElement) => {  
+  element.classList.toggle('active')
+}
+
+const toogleParentCarreActiveClass = (e: Event, element: HTMLDivElement) => {
+  element.classList.toggle('active')
+}
+
+</script>
 
 <template>
   <div class="services">
@@ -6,11 +21,11 @@
       <h1>Mes prestations en salon et à domicile</h1>
     </div>
     <div class="photos">
-      <div class="carre">
+      <div class="carre"  ref="carre1" :onclick="($event :Event) => toogleCarreActiveClass($event, carre1!)">
         <div class="imgsupport">
           <div class="txt">Réflexologies</div>
           <img src="../assets/chambre.png" alt="" />
-          <div class="prix">
+          <div class="prix" :onclick="($event :Event) => toogleParentCarreActiveClass($event, carre1!)">
             <ul>
               <li>
                 <div class="taille">Réflexologie relaxante</div>
@@ -31,13 +46,13 @@
             </ul>
           </div>
         </div>
-
       </div>
-      <div class="carre">
+
+      <div class="carre" ref="carre2" :onclick="($event :Event) => toogleCarreActiveClass($event, carre2!)">
         <div class="imgsupport">
         <div class="txt">Massages</div>
           <img src="../assets/pied.png" alt="" />
-          <div class="prix">
+          <div class="prix"  :onclick="($event :Event) => toogleParentCarreActiveClass($event, carre2!)">
             <ul>
               <li>
                 <div class="taille">Massage du dos</div>
@@ -67,11 +82,12 @@
           </div>
         </div>
       </div>
-      <div class="carre">
+
+      <div class="carre" ref="carre3" :onclick="($event :Event) => toogleCarreActiveClass($event, carre3!)">
         <div class="imgsupport">
           <div class="txt">Ateliers</div>
           <img src="../assets/cranien.jpg" alt="" />
-          <div class="prix">
+          <div class="prix"  :onclick="($event :Event) => toogleParentCarreActiveClass($event, carre3!)">
             <ul>
               <li>
                 <div class="taille">Atelier parents/bébé - 5 Ateliers</div>
@@ -160,11 +176,7 @@
   z-index: 2;
 }
 
-.services .photos .carre .imgsupport:hover .prix {
-  bottom: 0;
-}
-
-.services .photos .carre .imgsupport .txt:hover + .prix {
+.services .photos .carre .imgsupport:hover .prix, .services .photos .carre .imgsupport .txt:hover + .prix {
   bottom: 0;
 }
 
@@ -231,6 +243,24 @@
   padding: 10px;
   border-radius: 5px;
   background-color: rgba(255, 255, 255, 0.8);
+}
+
+@media (max-width: 900px) {
+  .services .photos {
+   flex-direction: column;
+   align-items: center;
+   padding: 16px;
+  }
+
+  .services .photos .carre {
+    width: 100%;
+    margin-bottom: 32px;
+    bottom: -100%;
+  }
+
+  .services .photos .carre.active, .services .photos .carre .imgsupport .txt + .prix {
+    bottom: 0;
+  }
 }
 
 </style>

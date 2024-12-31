@@ -3,6 +3,8 @@ import { reactive, ref } from 'vue';
 import { toast } from 'vue3-toastify';
 import "vue3-toastify/dist/index.css";
 
+const width = window.innerWidth
+
 type ReservationForm = {
   nom: string;
   prenom: string;
@@ -98,7 +100,7 @@ getData()
             <input v-model="form.phone" id="phone" type="tel" class="input-field" />
           </div>
           <div class="input-container">
-            <label for="type">Type de prestation</label>
+            <label for="type">Type de soin</label>
             <select v-model="form.type" id="type" class="input-field">
               <option>Choisissez une option</option>
               <option        
@@ -128,11 +130,17 @@ getData()
           </div>
 
           <!-- Conteneur pour le champ Date et bouton -->
-          <div class="input-container date-container">
+          <div class="input-container">
             <label for="date">Date du rendez-vous</label>
-            <input v-model="form.date" id="date" type="date" class="input-field date-field" />
+            <input v-model="form.date" id="date" type="date" class="input-field" />
+          </div>
+          
+          <div v-if="width > 900" class="input-container submit-container">
             <button type="submit" class="submit-button">Réserver</button>
           </div>
+        </div>
+        <div v-if="width <= 900" class="submit-btn-wrapper">
+          <button type="submit" class="submit-button">Réserver</button>
         </div>
       </form>
     </div>
@@ -154,6 +162,7 @@ getData()
   background-position: center;
   margin: 0 auto;
 }
+
 
 .reservation-form h1 {
   font-size: 32px;
@@ -203,6 +212,18 @@ getData()
   outline: none;
 }
 
+.submit-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  padding-right: 16px;
+}
+
+.submit-container .submit-button {
+  width: min-content;
+}
+
 .submit-button {
   background-color: #234899;
   color: #fff;
@@ -225,15 +246,19 @@ getData()
   transform: scale(0.95);
 }
 
-.date-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  grid-column: span 2;
-}
 
-.date-field {
-  width: 150px;
-  margin-right: 20px;
+@media (max-width: 900px) {
+  .form-grid {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+  }
+  
+.reservation-form form .submit-btn-wrapper {
+  display: flex;
+  justify-content:center;
+  width: 100%;
+  margin-bottom: 16px;
+}
 }
 </style>

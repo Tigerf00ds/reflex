@@ -191,4 +191,12 @@ form {
 .submit-button:active {
   transform: scale(0.95); /* Effet d'enfoncement */
 }
+
+@media (max-width: 900px) {
+  form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+}
 </style>

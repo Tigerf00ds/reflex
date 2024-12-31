@@ -38,6 +38,11 @@ const router = createRouter({
       name: "contact",
       component: () => import("../views/ContactView.vue"),
     },
+    {
+      path: "/admin/login",
+      name: "admin-login",
+      component: () => import("../views/AdminLoginView.vue"),
+    },
     // {
     //   path: "/login",
     //   name: "login",

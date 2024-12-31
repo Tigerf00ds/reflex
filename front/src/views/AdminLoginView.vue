@@ -1,37 +1,76 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { reactive } from "vue";
+import { toast } from "vue3-toastify";
+import "vue3-toastify/dist/index.css";
+
+type AdminLoginForm = {
+  email: string;
+  password: string;
+};
+
+const form = reactive<AdminLoginForm>({
+  email: "",
+  password: "",
+});
+
+async function submit(e: Event) {
+  e.preventDefault();
+
+  await fetch("http://localhost:3000/api/admin/login", {
+    method: "post",
+    body: JSON.stringify(form),
+    headers: { "Content-type": "application/json" },
+  })
+    .then(async (responseHTTP) => {
+      if(responseHTTP.status === 500) {
+        const errorMessage = await responseHTTP.text()
+        return toast.error(errorMessage);
+      }
+
+      responseHTTP.text().then(responseValue => {
+        toast.success(responseValue);
+        form.email = ''
+        form.password = ''
+        window.location.pathname = '/back-office'
+      })
+
+    })
+}
+</script>
 
 <template>
-    <!-- Formulaire de connexion -->
-    <div class="login">
-      <h1>Connexion</h1>
-      <form>
-        <div class="input-group">
-          <label for="email">E-mail</label>
-          <input
-            id="email"
-            type="email"
-            placeholder="Entrez votre e-mail"
-            class="input-field"
-          />
-        </div>
-        <div class="input-group">
-          <label for="password">Mot de passe</label>
-          <input
-            id="password"
-            type="password"
-            placeholder="Entrez votre mot de passe"
-            class="input-field"
-          />
-        </div>
-        <div class="button-container">
-          <button type="submit" class="submit-button">Se connecter</button>
-        </div>
-        <div class="link-group">
-          <p>Pas encore inscrit ? <a href="#">Créer un compte</a></p>
-          <p><a href="#">Mot de passe oublié ?</a></p>
-        </div>
-      </form>
-    </div>
+  <!-- Formulaire de connexion -->
+  <div class="login">
+    <h1>Connexion</h1>
+    <form @submit="submit">
+      <div class="input-group">
+        <label for="email">E-mail</label>
+        <input
+        v-model="form.email"
+          id="email"
+          type="email"
+          placeholder="Entrez votre e-mail"
+          class="input-field"
+        />
+      </div>
+      <div class="input-group">
+        <label for="password">Mot de passe</label>
+        <input
+        v-model="form.password"
+          id="password"
+          type="password"
+          placeholder="Entrez votre mot de passe"
+          class="input-field"
+        />
+      </div>
+      <div class="button-container">
+        <button type="submit" class="submit-button">Se connecter</button>
+      </div>
+      <div class="link-group">
+        <p><a href="#">Mot de passe oublié ?</a></p>
+      </div>
+    </form>
+  </div>
 </template>
 
 <style scoped>
