@@ -19,6 +19,7 @@ const emailPassSchema = {
     required: ["email", "password"],
     additionalProperties: false
 }
+
 const emailPassValidate = ajv.compile(emailPassSchema);
 
 router.get('/', (req, res) => {
@@ -46,31 +47,38 @@ router.post('/create', async (req, res) => {
         console.log(emailPassValidate.errors);
         return res.status(400).json({ error: 'Erreur type', details: emailPassValidate.errors });
     }
+    
     const { email, password } = req.body;
     if(!email || !email.match(emailRegex)){
         console.error('E-mail invalide.');
         return res.status(400).json({ error: 'Erreur requête', details: 'E-mail invalide.' });
     }
+
     if(!password || !password.match(/.{10,255}/)){
         console.error('Mot de passe trop court.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Mot de passe trop court.' });
     }
+
     if(!password || !password.match(/[a-z]/)){
         console.error('Aucune minuscule dans le mot de passe.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Aucune minuscule dans le mot de passe.' });
     }
+
     if(!password || !password.match(/[A-Z]/)){
         console.error('Aucune majuscule dans le mot de passe.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Aucune majuscule dans le mot de passe.' });
     }
+
     if(!password || !password.match(/[0-9]/)){
         console.error('Aucun numéro dans le mot de passe.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Aucun numéro dans le mot de passe.' });
     }
+
     if(!password || !password.match(/[!@#$%^&*(),;.?":{}|<>]/)){
         console.error('Aucun caractère spécial dans le mot de passe.');
         return res.status(400).json({ error: 'Erreur requête', details: 'Aucun caractère spécial dans le mot de passe.' });
     }
+
     bcrypt.hash(he.encode(password), 10).then((hashedPassword) => {
         const sql = 'INSERT INTO users (email, password) VALUES (?,?)';
         db.query(sql, [he.encode(email), hashedPassword], (err, results) => {
@@ -78,6 +86,7 @@ router.post('/create', async (req, res) => {
                 console.error('Erreur SQL :', err);
                 return res.status(500).json({ error: 'Erreur serveur', details: err });
             }
+
             return res.status(200).send({ message: 'Compte administrateur créé avec succès' });
         });
     }).catch(err => {
@@ -86,35 +95,44 @@ router.post('/create', async (req, res) => {
     });
 });
 
-router.post('/login', async (req, res) => {
+router.post('/admin/login', async (req, res) => {
     if (!emailPassValidate(req.body, emailPassSchema)){
         console.log(emailPassValidate.errors);
         return res.status(400).json({ error: 'Erreur type', details: 'E-mail ou mot de passe incorrect.' });
     }
+
     const { email, password } = req.body;
     const sql = 'SELECT * FROM users WHERE email = ?';
+
     if(!email || !email.match(emailRegex)){
         return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' });
     }
+
     db.query(sql, [he.encode(email)], async (err, results) => {
         if(err){
             console.error('Erreur de requête à la base de donnée.');
             return res.status(500).json({ error: 'Erreur serveur', details: err });
         }
+
         if(results.length<1){
             return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' });
         }
+
         const user = results[0];
+
         if(user.password && password){
             const isMatch = await bcrypt.compare(he.encode(password), user.password);
+            
             if( typeof(password)!=='string' || !isMatch){
                 return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' });
             }
         } else {
             return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' });
         }
+
         const token = jwt.sign({ id : user.id, role : 'admin'}, process.env.PRIVATE_KEY, {expiresIn: '1d' });
         req.session.user = 'admin';
+
         return res.status(200).json({ message: "Connecté", id: user.id, token: token });
     });
 });

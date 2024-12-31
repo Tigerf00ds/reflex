@@ -1,37 +1,87 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { reactive } from "vue";
+import { toast } from "vue3-toastify";
+import "vue3-toastify/dist/index.css";
+
+type ContactForm = {
+  nom: string;
+  prenom: string;
+  email: string;
+  objet: string;
+  message: string;
+};
+
+const form = reactive<ContactForm>({
+  nom: "",
+  prenom: "",
+  email: "",
+  objet: "",
+  message: "",
+});
+
+async function submit(e: Event) {
+  e.preventDefault();
+
+  await fetch("http://localhost:3000/api/contact", {
+    method: "post",
+    body: JSON.stringify(form),
+    headers: { "Content-type": "application/json" },
+  })
+    .then(async (responseHTTP) => {
+      if(responseHTTP.status === 500) {
+        const errorMessage = await responseHTTP.text()
+        return toast.error(errorMessage);
+      }
+
+      responseHTTP.text().then(responseValue => {
+        toast.success(responseValue);
+        form.nom = ''
+        form.prenom = ''
+        form.email = ''
+        form.objet = ''
+        form.message = ''
+      })
+
+    })
+}
+</script>
 
 <template>
-    <!-- Formulaire de contact -->
-    <div class="contact-form">
-      <h1>Contact</h1>
-      <form>
-        <div class="input-group">
-          <label for="nom">Nom</label>
-          <input id="nom" type="text" class="input-field" />
-        </div>
-        <div class="input-group">
-          <label for="prenom">Prénom</label>
-          <input id="prenom" type="text" class="input-field" />
-        </div>
-        <div class="input-group">
-          <label for="email">E-mail</label>
-          <input id="email" type="email" class="input-field" />
-        </div>
-        <div class="input-group">
-          <label for="objet">Objet</label>
-          <input id="objet" type="text" class="input-field" />
-        </div>
-        <div class="input-group full-width">
-          <label for="message">Message</label>
-          <textarea id="message" class="textarea"></textarea>
-        </div>
+  <!-- Formulaire de contact -->
+  <div class="contact-form">
+    <h1>Contact</h1>
+    <form @submit="submit">
+      <div class="input-group">
+        <label for="nom">Nom</label>
+        <input v-model="form.nom" id="nom" type="text" class="input-field" />
+      </div>
 
-        <!-- Centrage du bouton "Envoyer" -->
-        <div class="button-container">
-          <button type="submit" class="submit-button">Envoyer</button>
-        </div>
-      </form>
-    </div>
+      <div class="input-group">
+        <label for="prenom">Prénom</label>
+        <input v-model="form.prenom" id="prenom" type="text" class="input-field" />
+      </div>
+
+      <div class="input-group">
+        <label for="email">E-mail</label>
+        <input v-model="form.email" id="email" type="email" class="input-field" />
+      </div>
+
+      <div class="input-group">
+        <label for="objet">Objet</label>
+        <input v-model="form.objet" id="objet" type="text" class="input-field" />
+      </div>
+
+      <div class="input-group full-width">
+        <label for="message">Message</label>
+        <textarea v-model="form.message" id="message" class="textarea"></textarea>
+      </div>
+
+      <!-- Centrage du bouton "Envoyer" -->
+      <div class="button-container">
+        <button type="submit" class="submit-button">Envoyer</button>
+      </div>
+    </form>
+  </div>
 </template>
 
 <style scoped>
@@ -140,5 +190,13 @@ form {
 
 .submit-button:active {
   transform: scale(0.95); /* Effet d'enfoncement */
+}
+
+@media (max-width: 900px) {
+  form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
 }
 </style>

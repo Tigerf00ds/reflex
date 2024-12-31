@@ -1,54 +1,146 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { reactive, ref } from 'vue';
+import { toast } from 'vue3-toastify';
+import "vue3-toastify/dist/index.css";
+
+const width = window.innerWidth
+
+type ReservationForm = {
+  nom: string;
+  prenom: string;
+  email: string;
+  phone: string;
+  type: string;
+  location: string;
+  address: string;
+  zipCode: string;
+  date: string;
+};
+
+const form = reactive<ReservationForm>({
+  nom: "",
+  prenom: "",
+  email: "",
+  phone: "",
+  type: "",
+  location: "",
+  address: "",
+  zipCode: "",
+  date: ""
+});
+
+async function submit(e: Event) {
+  e.preventDefault();
+
+  await fetch("http://localhost:3000/api/reservation", {
+    method: "post",
+    body: JSON.stringify(form),
+    headers: { "Content-type": "application/json" },
+  })
+    .then(async (responseHTTP) => {
+      if(responseHTTP.status === 500) {
+        const errorMessage = await responseHTTP.text()
+        return toast.error(errorMessage);
+      }
+
+      responseHTTP.text().then(responseValue => {
+        toast.success(responseValue);
+        form.nom = ''
+        form.prenom = ''
+        form.email = ''
+        form.address = ''
+        form.location = ''
+        form.phone = ''
+        form.date = ''
+        form.type = ''
+        form.zipCode = ''
+      })
+
+    })
+}
+
+const cares: any = ref([])
+
+const getData = () => {
+  fetch('http://localhost:3000/api/cares')
+    .then(res => res.json())
+    .then((response) => {      
+      cares.value = response // <---- assign to the ref's value
+      console.log(cares.value);
+    })
+    .catch((error) => {
+      console.log(error)
+    });
+}
+
+getData()
+
+</script>
 
 <template>
     <!-- Formulaire de réservation -->
     <div class="reservation-form">
       <h1>Réservation</h1>
-      <form>
+      <form @submit="submit">
         <div class="form-grid">
           <div class="input-container">
             <label for="nom">Nom</label>
-            <input id="nom" type="text" class="input-field" />
+            <input v-model="form.nom" id="nom" type="text" class="input-field" />
           </div>
           <div class="input-container">
             <label for="prenom">Prénom</label>
-            <input id="prenom" type="text" class="input-field" />
+            <input v-model="form.prenom" id="prenom" type="text" class="input-field" />
           </div>
           <div class="input-container">
             <label for="email">Adresse mail</label>
-            <input id="email" type="email" class="input-field" />
+            <input v-model="form.email" id="email" type="email" class="input-field" />
           </div>
           <div class="input-container">
             <label for="phone">Numéro de téléphone</label>
-            <input id="phone" type="tel" class="input-field" />
+            <input v-model="form.phone" id="phone" type="tel" class="input-field" />
           </div>
           <div class="input-container">
-            <label for="type">Type de prestation</label>
-            <select id="type" class="input-field">
-              <option>Choisissez...</option>
+            <label for="type">Type de soin</label>
+            <select v-model="form.type" id="type" class="input-field">
+              <option>Choisissez une option</option>
+              <option        
+                v-for="care in cares"
+                :key="care.id"
+              >
+                {{care.name}}
+              </option>
             </select>
           </div>
           <div class="input-container">
             <label for="lieu">Lieu de la prestation</label>
-            <select id="lieu" class="input-field">
-              <option>Choisissez...</option>
+            <select v-model="form.location" id="lieu" class="input-field">
+              <option>Choisissez une option</option>
+              <option>Salon & Domicile</option>
+              <option>Entreprise</option>
+              <option>Structure</option>
             </select>
           </div>
           <div class="input-container">
             <label for="address">Adresse</label>
-            <input id="address" type="text" class="input-field" />
+            <input v-model="form.address" id="address" type="text" class="input-field" />
           </div>
           <div class="input-container">
             <label for="postal">Code postal</label>
-            <input id="postal" type="text" class="input-field" />
+            <input v-model="form.zipCode" id="postal" type="text" class="input-field" />
           </div>
 
           <!-- Conteneur pour le champ Date et bouton -->
-          <div class="input-container date-container">
+          <div class="input-container">
             <label for="date">Date du rendez-vous</label>
-            <input id="date" type="date" class="input-field date-field" />
+            <input v-model="form.date" id="date" type="date" class="input-field" />
+          </div>
+          
+          <div v-if="width > 900" class="input-container submit-container">
             <button type="submit" class="submit-button">Réserver</button>
           </div>
+        </div>
+        <div v-if="width <= 900" class="submit-btn-wrapper">
+          <button type="submit" class="submit-button">Réserver</button>
         </div>
       </form>
     </div>
@@ -70,6 +162,7 @@
   background-position: center;
   margin: 0 auto;
 }
+
 
 .reservation-form h1 {
   font-size: 32px;
@@ -119,6 +212,18 @@
   outline: none;
 }
 
+.submit-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  padding-right: 16px;
+}
+
+.submit-container .submit-button {
+  width: min-content;
+}
+
 .submit-button {
   background-color: #234899;
   color: #fff;
@@ -141,15 +246,19 @@
   transform: scale(0.95);
 }
 
-.date-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  grid-column: span 2;
-}
 
-.date-field {
-  width: 150px;
-  margin-right: 20px;
+@media (max-width: 900px) {
+  .form-grid {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+  }
+  
+.reservation-form form .submit-btn-wrapper {
+  display: flex;
+  justify-content:center;
+  width: 100%;
+  margin-bottom: 16px;
+}
 }
 </style>
