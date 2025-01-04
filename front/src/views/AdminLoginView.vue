@@ -16,7 +16,7 @@ const form = reactive<AdminLoginForm>({
 async function submit(e: Event) {
   e.preventDefault();
 
-  await fetch("http://localhost:3000/api/admin/login", {
+  await fetch("http://localhost:3000/api/users/admin/login", {
     method: "post",
     body: JSON.stringify(form),
     headers: { "Content-type": "application/json" },
@@ -28,12 +28,15 @@ async function submit(e: Event) {
       }
 
       responseHTTP.text().then(responseValue => {
-        toast.success(responseValue);
+        const res = JSON.parse(responseValue)
+        toast.success(res.message);
+
+        localStorage.setItem('token', res.token)
+
         form.email = ''
         form.password = ''
         window.location.pathname = '/back-office'
       })
-
     })
 }
 </script>

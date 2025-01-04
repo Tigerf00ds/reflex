@@ -26,16 +26,6 @@
 </template>
 
 <style scoped>
-/* Global styles */
-body {
-  margin: 0;
-  font-family: "Montserrat", sans-serif;
-  height: 100vh;
-  background-image: url("../assets/damier.png");
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
-}
 
 /* Container for structuring the page */
 .landing-page-container {

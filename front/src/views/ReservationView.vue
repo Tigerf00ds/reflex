@@ -66,7 +66,6 @@ const getData = () => {
     .then(res => res.json())
     .then((response) => {      
       cares.value = response // <---- assign to the ref's value
-      console.log(cares.value);
     })
     .catch((error) => {
       console.log(error)

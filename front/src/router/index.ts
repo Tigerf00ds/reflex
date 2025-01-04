@@ -56,6 +56,9 @@ const router = createRouter({
     {
       path: "/back-office",
       name: "back-office",
+      meta: {
+        requiresAuth: true
+      },
       component: () => import("../views/BackOfficeView.vue"),
     },
     {
@@ -67,6 +70,22 @@ const router = createRouter({
       component: () => import("../views/AboutView.vue"),
     },
   ],
+});
+
+router.beforeEach((to, from, next) => {
+  if (to.meta.requiresAuth) {
+    const token = localStorage.getItem('token');
+    if (token) {
+        // Autoriser l'accès
+        next();
+    } else {
+      // Ne pas autoriser l'accès et rediriger vers la page de connexion
+      next('/admin/login');
+    }
+  } else {
+    // Autoriser l'accès
+    next();
+  }
 });
 
 export default router;

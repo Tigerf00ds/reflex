@@ -21,7 +21,7 @@ const emailPassSchema = {
 }
 
 const emailPassValidate = ajv.compile(emailPassSchema);
-
+// /api/users
 router.get('/', (req, res) => {
     // DÉSACTIVÉ POUR LE TEST
     // authorizationJWT
@@ -114,7 +114,7 @@ router.post('/admin/login', async (req, res) => {
             return res.status(500).json({ error: 'Erreur serveur', details: err });
         }
 
-        if(results.length<1){
+        if(results.length < 1){
             return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' });
         }
 

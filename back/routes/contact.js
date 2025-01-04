@@ -10,7 +10,7 @@ router.post('/', async (req, res) => {
     secure: false, // ou true si vous utilisez SSL
     auth: {
       user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD
+      pass: process.env.SMTP_PASSWORD,
     }
   });
 

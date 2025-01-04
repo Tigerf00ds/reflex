@@ -85,15 +85,6 @@ async function submit(e: Event) {
 </template>
 
 <style scoped>
-/* Global styles */
-body {
-  margin: 0;
-  font-family: "Montserrat", sans-serif;
-  background-image: url("../assets/damier.png"); /* Image en arrière-plan */
-  background-size: 100vw auto; /* Largeur à 100%, hauteur proportionnelle */
-  background-repeat: repeat-y; /* Répétition verticale */
-  background-position: center top; /* Aligné au centre et en haut */
-}
 
 /* Formulaire de contact */
 .contact-form {
