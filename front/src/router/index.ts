@@ -9,10 +9,25 @@ const router = createRouter({
       component: () => import("../views/LandingPageView.vue"), // c'est du lazy loading : ça permet de charger les composants seulement quand on en a besoin
     },
     {
-      path: "/prestations",
-      name: "prestations",
-      component: () => import("../views/PrestationsView.vue"),
+      path: "/entreprise",
+      name: "entreprise",
+      component: () => import("../views/EntrepriseView.vue"),
     },
+    {
+      path: '/salon-domicile',
+      name: 'salon-domicile',
+      component: () => import("../views/SalonDomicileView.vue"), // Composant à afficher
+    },
+    {
+      path: "/structure",
+      name: "structure",
+      component: () => import("../views/StructureView.vue"),
+    },
+    // {
+    //   path: "/prestations",
+    //   name: "prestations",
+    //   component: () => import("../views/PrestationsView.vue"),
+    // },
     {
       path: "/reservation",
       name: "reservation",
@@ -24,14 +39,27 @@ const router = createRouter({
       component: () => import("../views/ContactView.vue"),
     },
     {
-      path: "/login",
-      name: "login",
-      component: () => import("../views/LoginView.vue"),
+      path: "/admin/login",
+      name: "admin-login",
+      component: () => import("../views/AdminLoginView.vue"),
     },
+    // {
+    //   path: "/login",
+    //   name: "login",
+    //   component: () => import("../views/LoginView.vue"),
+    // },
     {
       path: "/presentation",
       name: "presentation",
       component: () => import("../views/PresentationView.vue"),
+    },
+    {
+      path: "/back-office",
+      name: "back-office",
+      meta: {
+        requiresAuth: true
+      },
+      component: () => import("../views/BackOfficeView.vue"),
     },
     {
       path: "/about",
@@ -42,6 +70,22 @@ const router = createRouter({
       component: () => import("../views/AboutView.vue"),
     },
   ],
+});
+
+router.beforeEach((to, from, next) => {
+  if (to.meta.requiresAuth) {
+    const token = localStorage.getItem('token');
+    if (token) {
+        // Autoriser l'accès
+        next();
+    } else {
+      // Ne pas autoriser l'accès et rediriger vers la page de connexion
+      next('/admin/login');
+    }
+  } else {
+    // Autoriser l'accès
+    next();
+  }
 });
 
 export default router;

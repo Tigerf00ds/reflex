@@ -13,7 +13,6 @@ const telRegex = /^[0-9]{10,13}$/;
 const addressRegex = /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\-']{1,255}$/;
 const dateRegex = /^20[0-9]{2}-[0-9]{2}-[0-9]{2}$/;
 
-
 const appointmentsSchema = {
     type: "object",
     properties: {

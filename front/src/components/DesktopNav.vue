@@ -1,22 +1,16 @@
-<script setup lang="ts">
-import MobileNav from "@/components/MobileNav.vue";
-import DesktopNav from "@/components/DesktopNav.vue";
-
-const width = window.innerWidth
-
-</script>
-
 <template>
-  <!-- Header -->
-  <header class="header">
-    <div class="header-content">
-      <RouterLink to="/">
-        <img src="../assets/logo-1 1.svg" alt="Logo" class="logo" />
-      </RouterLink>
-      <MobileNav v-if="width < 1352" />
-      <DesktopNav v-else />
-    </div>
-  </header>
+  <nav class="nav">
+    <RouterLink to="/">Landing Page</RouterLink>
+    <RouterLink to="Entreprise">Entreprise</RouterLink>
+    <RouterLink to="Salon-Domicile">Salon & Domicile</RouterLink>
+    <RouterLink to="Structure">Structure</RouterLink> 
+    <!-- <RouterLink to="prestations">Mes Prestations</RouterLink> -->
+    <RouterLink to="Reservation">Réservation</RouterLink>
+    <RouterLink to="presentation">Présentation</RouterLink>
+    <RouterLink to="Contact">Contact</RouterLink>
+    <!-- <RouterLink to="#">Évènements</RouterLink> -->
+    <!-- <RouterLink to="login">Login</RouterLink> -->
+  </nav>
 </template>
 
 <style scoped>
@@ -26,7 +20,7 @@ const width = window.innerWidth
   justify-content: space-between; /* Logo à gauche et navigation à droite */
   align-items: center;
   padding: 20px;
-  background-image: url("../assets/damier.png"); /* Ajout de l'image en arrière-plan */
+  background-image: url('../assets/damier.png'); /* Ajout de l'image en arrière-plan */
   background-size: cover; /* L'image couvre toute la largeur */
   background-repeat: no-repeat;
   background-position: center; /* Centrer l'image */

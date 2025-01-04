@@ -6,11 +6,13 @@ import Footer from "./components/Footer.vue";
 
 <template>
   <Header/>
+  
   <div class="container">
     <div class="content">
       <RouterView />
     </div>
   </div>
+
   <Footer/>
 </template>
 
@@ -93,6 +95,16 @@ nav a:first-of-type {
 
     padding: 1rem 0;
     margin-top: 1rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .container {
+    min-height: 100px !important;
+  }
+
+  .content {
+    margin: 0;
   }
 }
 </style>
